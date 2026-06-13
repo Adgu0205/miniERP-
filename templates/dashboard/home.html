@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Dashboard · ProcurERP{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+
+{% block content %}
+<div x-data="dash()" x-init="init()" class="space-y-6 pb-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-semibold">Executive Dashboard</h1>
+      <p class="text-xs text-slate-500">Live operational intelligence · last 30 days
+        <span x-show="loading" class="text-violet-500">· refreshing…</span></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-slate-400" x-text="updated"></span>
+      <button @click="refresh()" class="text-sm px-3 py-1.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-1">
+        <svg class="h-4 w-4" :class="loading && 'animate-spin'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6M20 8a8 8 0 00-14.3-3M4 16a8 8 0 0014.3 3"/></svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI tiles: always visible -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    {% include "dashboard/_tile.html" with id="revenue" label="Revenue (30d)" value=m.revenue prefix="₹" delta=m.revenue_delta color="violet" %}
+    {% include "dashboard/_tile.html" with id="total_sales" label="Sales Orders" value=m.total_sales delta=m.sales_delta color="sky" %}
+    {% include "dashboard/_tile.html" with id="pending" label="Pending Deliveries" value=m.pending_deliveries color="amber" %}
+    {% include "dashboard/_tile.html" with id="mfg" label="Open Mfg Orders" value=m.mfg_orders color="indigo" %}
+    {% include "dashboard/_tile.html" with id="delayed" label="Delayed Orders" value=m.delayed_orders color="rose" %}
+    {% include "dashboard/_tile.html" with id="po" label="Purchase Orders" value=m.purchase_orders color="emerald" %}
+    {% include "dashboard/_tile.html" with id="invval" label="Inventory Value" value=m.inventory_value prefix="₹" color="fuchsia" %}
+    {% include "dashboard/_tile.html" with id="fulfil" label="Fulfilment Rate" value=m.fulfilment suffix="%" color="teal" %}
+  </div>
+
+  <!-- Tab bar -->
+  <div class="flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800">
+    <template x-for="t in tabs" :key="t.id">
+      <button @click="setTab(t.id)"
+        class="px-4 py-2.5 text-sm whitespace-nowrap border-b-2 -mb-px transition"
+        :class="tab===t.id ? 'border-violet-500 text-violet-600 font-medium' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+        x-text="t.label"></button>
+    </template>
+  </div>
+
+  <!-- ===== Overview ===== -->
+  <div x-show="tab==='overview'" data-tab="overview" class="space-y-5">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div class="card p-5 lg:col-span-2">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm">Sales Performance</h3>
+          <span class="text-xs text-slate-400">Revenue ₹ vs Orders</span>
+        </div>
+        <div class="h-72"><canvas data-chart="trend"></canvas></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-semibold text-sm mb-3">Inventory Value Split</h3>
+        <div class="h-72"><canvas data-chart="inventory"></canvas></div>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div class="card p-5">
+        <h3 class="font-semibold text-sm mb-3">⚠ Low / Out of Stock</h3>
+        {% if low_stock %}
+        <ul class="text-sm divide-y divide-slate-100 dark:divide-slate-800">
+          {% for p in low_stock %}
+          <li class="py-2 flex justify-between"><span>{{ p.name }}</span>
+            <span class="text-rose-500 font-semibold">{{ p.free_to_use }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}<p class="text-sm text-emerald-600">All products in stock ✅</p>{% endif %}
+      </div>
+      <div class="card p-5">
+        <h3 class="font-semibold text-sm mb-3">Recent Sales Orders</h3>
+        <ul class="text-sm divide-y divide-slate-100 dark:divide-slate-800">
+          {% for so in recent_so %}
+          <li class="py-2 flex justify-between items-center gap-2">
+            <a href="{% url 'sales:detail' so.pk %}" class="text-violet-600 hover:underline">{{ so.reference }}</a>
+            <span class="text-xs text-slate-500 flex-1 truncate">{{ so.customer.name|default:"—"|truncatechars:18 }}</span>
+            {% include "partials/badge.html" with status=so.status label=so.get_status_display %}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Sales & Customers ===== -->
+  <div x-show="tab==='sales'" data-tab="sales" class="space-y-5" x-cloak>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-sm">Top Products</h3>
+          <select x-model="topMetric" @change="renderTop()" class="text-xs rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1">
+            <option value="qty">By Quantity</option>
+            <option value="revenue">By Revenue</option>
+          </select>
+        </div>
+        <div class="h-72"><canvas data-chart="top"></canvas></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-semibold text-sm mb-3">Revenue by Customer</h3>
+        <div class="h-72"><canvas data-chart="customers"></canvas></div>
+      </div>
+    </div>
+    <div class="card p-5">
+      <h3 class="font-semibold text-sm mb-3">Sales Order Pipeline</h3>
+      <div class="h-72"><canvas data-chart="so_status"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ===== Manufacturing & Procurement ===== -->
+  <div x-show="tab==='ops'" data-tab="ops" class="space-y-5" x-cloak>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div class="card p-5">
+        <h3 class="font-semibold text-sm mb-3">Manufacturing Status</h3>
+        <div class="h-72"><canvas data-chart="mo_status"></canvas></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-semibold text-sm mb-3">Procurement Engine</h3>
+        <div class="h-72"><canvas data-chart="procurement"></canvas></div>
+        <p class="text-xs text-slate-400 mt-1 text-center">Auto Buy vs Manufacture decisions</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Inventory ===== -->
+  <div x-show="tab==='inventory'" data-tab="inventory" class="space-y-5" x-cloak>
+    <div class="card p-5">
+      <h3 class="font-semibold text-sm mb-1">Material Flow Across the Business</h3>
+      <p class="text-xs text-slate-400 mb-3">Purchases → Warehouse → Manufacturing → Finished Goods → Customers · units moved.</p>
+      <div class="h-80"><canvas data-chart="sankey"></canvas></div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div class="card p-5">
+        <h3 class="font-semibold text-sm mb-3">Inventory Value Distribution</h3>
+        <div class="h-72"><canvas data-chart="inventory2"></canvas></div>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-semibold text-sm mb-3">⚠ Low / Out of Stock</h3>
+        {% if low_stock %}
+        <ul class="text-sm divide-y divide-slate-100 dark:divide-slate-800">
+          {% for p in low_stock %}
+          <li class="py-2 flex justify-between"><span>{{ p.name }}</span>
+            <span class="text-rose-500 font-semibold">{{ p.free_to_use }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}<p class="text-sm text-emerald-600">All products in stock ✅</p>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.14.0/dist/chartjs-chart-sankey.min.js"></script>
+<script>
+function dash(){
+  return {
+    data:null, charts:{}, loading:false, topMetric:'qty', updated:'', tab:'overview',
+    tabs:[{id:'overview',label:'Overview'},{id:'sales',label:'Sales & Customers'},
+          {id:'ops',label:'Manufacturing & Procurement'},{id:'inventory',label:'Inventory'}],
+    async init(){
+      // Chart.js animation loop conflicts with the Tailwind Play-CDN DOM observer
+      // (it resizes canvases mid-frame → blank charts). Card-level CSS animation stays.
+      if(window.Chart){ Chart.defaults.responsive=true; Chart.defaults.maintainAspectRatio=false;
+        Chart.defaults.animation=false; }
+      this.tab=localStorage.getItem('dash-tab')||'overview';
+      await this.load();
+      this.$nextTick(()=>this.renderTab(this.tab));
+    },
+    async load(fresh){
+      this.loading=true;
+      try{
+        const r=await fetch("{% url 'dashboard:analytics' %}"+(fresh?'?fresh=1':''));
+        this.data=await r.json();
+        this.updated='Updated '+new Date().toLocaleTimeString();
+      }catch(e){ console.warn('analytics load failed', e); }
+      this.loading=false;
+    },
+    setTab(t){ this.tab=t; localStorage.setItem('dash-tab',t); this.$nextTick(()=>this.renderTab(t)); },
+    async refresh(){ await this.load(true); this.renderTab(this.tab); },
+    renderTab(t){
+      if(!this.data) return;
+      document.querySelectorAll(`[data-tab="${t}"] [data-chart]`).forEach(c=>this.render(c.dataset.chart,true));
+    },
+    tick(){ return document.documentElement.classList.contains('dark')?'#94a3b8':'#475569'; },
+    grid(){ return document.documentElement.classList.contains('dark')?'rgba(148,163,184,.12)':'rgba(100,116,139,.12)'; },
+    palette:['#8b5cf6','#ec4899','#0ea5e9','#10b981','#f59e0b','#ef4444','#6366f1','#14b8a6'],
+    mk(key,cfg,force){
+      const el=document.querySelector(`[data-chart="${key}"]`);
+      if(!el || el.tagName!=='CANVAS' || typeof el.getContext!=='function' || !el.getContext('2d')) return;
+      if(this.charts[key]){ if(!force) return; this.charts[key].destroy(); }
+      this.charts[key]=new Chart(el,cfg);
+    },
+    sankeyReady(){ try{ return !!(window.Chart && Chart.registry.controllers.get('sankey')); }catch(e){ return false; } },
+    render(key,force){ try{ this._render(key,force); }catch(e){ console.warn('chart '+key+' skipped:', e.message); } },
+    _render(key,force){
+      if(!this.data) return;
+      const d=this.data, t=this.tick(), g=this.grid(), P=this.palette;
+      const cartesian=(extra={})=>({x:{ticks:{color:t},grid:{color:g}},y:{ticks:{color:t},grid:{color:g},beginAtZero:true},...extra});
+      if(key==='trend') this.mk(key,{type:'bar',data:{labels:d.trend.labels,datasets:[
+          {type:'line',label:'Revenue ₹',data:d.trend.revenue,yAxisID:'y',borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,.15)',fill:true,tension:.35,pointRadius:0},
+          {type:'bar',label:'Orders',data:d.trend.orders,yAxisID:'y1',backgroundColor:'rgba(14,165,233,.55)',borderRadius:4}]},
+          options:{interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:t,boxWidth:12}}},
+          scales:{x:{ticks:{color:t,maxTicksLimit:10},grid:{color:g}},
+            y:{position:'left',ticks:{color:t},grid:{color:g},beginAtZero:true},
+            y1:{position:'right',ticks:{color:t},grid:{display:false},beginAtZero:true}}}},force);
+      if(key==='inventory'||key==='inventory2') this.mk(key,{type:'doughnut',data:{labels:d.inventory.labels,datasets:[{data:d.inventory.values,backgroundColor:P,borderWidth:0}]},
+          options:{cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:t,boxWidth:10,font:{size:10}}}}}},force);
+      if(key==='top') this.renderTop(force);
+      if(key==='customers') this.mk(key,{type:'bar',data:{labels:d.customers.labels,datasets:[{label:'₹',data:d.customers.values,backgroundColor:'#ec4899',borderRadius:5}]},
+          options:{indexAxis:'y',plugins:{legend:{display:false}},scales:cartesian()}},force);
+      if(key==='so_status') this.mk(key,{type:'polarArea',data:{labels:d.so_status.labels,datasets:[{data:d.so_status.values,backgroundColor:P.map(c=>c+'cc')}]},
+          options:{plugins:{legend:{position:'right',labels:{color:t,boxWidth:10,font:{size:11}}}},scales:{r:{ticks:{display:false},grid:{color:g}}}}},force);
+      if(key==='mo_status') this.mk(key,{type:'bar',data:{labels:d.mo_status.labels,datasets:[{label:'MOs',data:d.mo_status.values,backgroundColor:'#6366f1',borderRadius:5}]},
+          options:{plugins:{legend:{display:false}},scales:cartesian()}},force);
+      if(key==='procurement') this.mk(key,{type:'doughnut',data:{labels:['Purchase','Manufacture'],datasets:[{data:[d.procurement.buy,d.procurement.manufacture],backgroundColor:['#10b981','#0ea5e9'],borderWidth:0}]},
+          options:{cutout:'58%',plugins:{legend:{position:'bottom',labels:{color:t,boxWidth:10}}}}},force);
+      if(key==='sankey'){
+        if(this.sankeyReady())
+          this.mk(key,{type:'sankey',data:{datasets:[{data:d.sankey,borderWidth:0,
+            colorFrom:c=>P[c.dataIndex%P.length],colorTo:c=>P[(c.dataIndex+2)%P.length],
+            colorMode:'gradient'}]},options:{animation:false,plugins:{legend:{display:false}}}},force);
+        else this.renderSankeyFallback(d.sankey);
+      }
+    },
+    renderTop(force){
+      if(!this.data)return; const d=this.data,t=this.tick(),g=this.grid();
+      const vals=this.topMetric==='qty'?d.top_products.qty:d.top_products.revenue;
+      this.mk('top',{type:'bar',data:{labels:d.top_products.labels,datasets:[{label:this.topMetric,data:vals,backgroundColor:'#8b5cf6',borderRadius:5}]},
+        options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:t},grid:{color:g},beginAtZero:true},y:{ticks:{color:t},grid:{display:false}}}}},true);
+    },
+    renderSankeyFallback(flows){
+      const el=document.querySelector('[data-chart="sankey"]'); if(!el)return;
+      el.style.display='none';
+      let wrap=el.parentNode.querySelector('.sankey-fb');
+      if(!wrap){ wrap=document.createElement('div'); wrap.className='sankey-fb space-y-3 pt-1'; el.parentNode.insertBefore(wrap, el); }
+      const max=Math.max(...flows.map(f=>f.flow),1);
+      wrap.innerHTML=flows.map(f=>`<div><div class="flex justify-between text-xs text-slate-500 mb-1"><span>${f.from} <span class="text-slate-400">→</span> ${f.to}</span><span class="font-semibold tabular-nums">${f.flow.toLocaleString('en-IN')}</span></div><div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-700" style="width:${Math.max(f.flow/max*100,4)}%"></div></div></div>`).join('');
+    },
+  }
+}
+function countUp(el){
+  const target=parseFloat(el.dataset.value)||0, pre=el.dataset.prefix||'', suf=el.dataset.suffix||'';
+  const dur=900, t0=performance.now();
+  const fmt=n=>pre+Math.round(n).toLocaleString('en-IN')+suf;
+  function step(now){ const p=Math.min((now-t0)/dur,1); el.textContent=fmt(target*(1-Math.pow(1-p,3))); if(p<1)requestAnimationFrame(step); }
+  requestAnimationFrame(step);
+}
+document.querySelectorAll('[data-countup]').forEach(countUp);
+</script>
+{% endblock %}
