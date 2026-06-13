@@ -1,0 +1,9 @@
+Django==5.1.4
+dj-database-url==2.3.0
+python-dotenv==1.0.1
+psycopg2-binary==2.9.10
+whitenoise==6.8.2
+gunicorn==23.0.0
+redis==5.2.1
+# Optional async/background (not required to run the demo)
+celery==5.4.0
