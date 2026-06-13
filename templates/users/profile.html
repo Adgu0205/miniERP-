@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Profile{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">My Profile</h1>
+<div class="card p-5 max-w-md mb-6">
+  <div class="text-sm space-y-2">
+    <div><span class="text-slate-500">User:</span> {{ user.get_username }}</div>
+    <div><span class="text-slate-500">Role:</span> {{ profile.get_role_display }}</div>
+    <div><span class="text-slate-500">Position:</span> {{ profile.position|default:"—" }}</div>
+    <div><span class="text-slate-500">Modules:</span> {{ profile.modules|join:", " }}</div>
+  </div>
+</div>
+{% if profiles %}
+<h2 class="text-lg font-semibold mb-3">All Users (Admin)</h2>
+<div class="card overflow-hidden">
+  <table class="erp"><thead><tr><th>User</th><th>Role</th><th>Position</th></tr></thead>
+  <tbody>{% for p in profiles %}<tr><td>{{ p.user.username }}</td><td>{{ p.get_role_display }}</td><td>{{ p.position }}</td></tr>{% endfor %}</tbody></table>
+</div>
+{% endif %}
+{% endblock %}

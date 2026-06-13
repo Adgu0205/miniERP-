@@ -1,0 +1,126 @@
+{% load humanize static %}
+<!DOCTYPE html>
+<html lang="en" :class="{ 'dark': dark }" x-data="{ dark: localStorage.getItem('erp-dark')==='1', sidebar: true }"
+      x-init="$watch('dark', v => localStorage.setItem('erp-dark', v?'1':'0'))">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ProcurERP{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <script>
+    // Silence the Tailwind Play-CDN "not for production" dev notice (we use the CDN intentionally for the demo).
+    (function(){const w=console.warn;console.warn=function(){const m=arguments[0];if(typeof m==='string'&&m.includes('cdn.tailwindcss.com'))return;return w.apply(console,arguments);};})();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    [x-cloak]{display:none!important}
+    body{font-family:ui-sans-serif,system-ui,'Segoe UI',sans-serif}
+    .inp{width:100%;border-radius:.375rem;border:1px solid #cbd5e1;background:#fff;padding:.5rem .75rem;font-size:.875rem;outline:none}
+    .inp:focus{box-shadow:0 0 0 2px #8b5cf6}
+    .dark .inp{border-color:#475569;background:#1e293b;color:#f1f5f9}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:.75rem}
+    .dark .card{background:#0f172a;border-color:#1e293b}
+    table.erp{width:100%;font-size:.875rem;border-collapse:collapse}
+    table.erp th{text-align:left;font-weight:600;color:#64748b;padding:.6rem .75rem;border-bottom:1px solid #e2e8f0}
+    table.erp td{padding:.55rem .75rem;border-bottom:1px solid #f1f5f9}
+    .dark table.erp th{border-color:#1e293b}
+    .dark table.erp td{border-color:#1e293b}
+    table.erp tbody tr:hover{background:#f8fafc}
+    .dark table.erp tbody tr:hover{background:#1e293b}
+    /* let alignment utilities win over the base th/td rules so numeric
+       column headers line up with their (right-aligned) values */
+    table.erp th.text-right,table.erp td.text-right{text-align:right}
+    table.erp th.text-center,table.erp td.text-center{text-align:center}
+    table.erp th,table.erp td{vertical-align:middle}
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
+{% if user.is_authenticated %}
+<div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside x-show="sidebar" x-cloak
+         class="w-60 shrink-0 bg-slate-900 text-slate-300 flex flex-col">
+    <div class="h-14 flex items-center gap-2 px-4 border-b border-slate-800">
+      <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 grid place-items-center">
+        <svg class="h-5 w-5" viewBox="0 0 64 64" fill="none" stroke="white" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M32 12 L50 21 L32 30 L14 21 Z"/><path d="M14 21 V43 L32 52 V30"/><path d="M50 21 V43 L32 52"/></svg>
+      </div>
+      <span class="font-semibold text-white">ProcurERP</span>
+    </div>
+    <nav class="flex-1 overflow-y-auto py-3 space-y-0.5 text-sm">
+      {% for item in nav_items %}
+      <a href="{% url item.urlname %}"
+         class="flex items-center gap-3 px-4 py-2 hover:bg-slate-800 hover:text-white transition
+                {% if item.active %}bg-slate-800 text-white border-l-2 border-violet-500{% endif %}">
+        <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ item.icon }}"/></svg>
+        {{ item.label }}
+      </a>
+      {% endfor %}
+    </nav>
+    <div class="p-3 border-t border-slate-800 text-xs text-slate-500">
+      Inventory-driven ERP
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <header class="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center gap-4 px-4">
+      <button @click="sidebar=!sidebar" class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <nav class="text-sm text-slate-500">{% block breadcrumb %}Dashboard{% endblock %}</nav>
+      <div class="ml-auto flex items-center gap-3">
+        <!-- Smart Alerts bell -->
+        <div class="relative" x-data="{ open:false }">
+          <button @click="open=!open" class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 relative" title="Smart alerts">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1"/></svg>
+            {% if alert_count %}<span class="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[10px] grid place-items-center">{{ alert_count }}</span>{% endif %}
+          </button>
+          <div x-show="open" x-cloak @click.outside="open=false"
+               class="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto card shadow-xl z-50 p-2">
+            <div class="text-xs font-semibold text-slate-500 px-2 py-1">Smart Alerts ({{ alert_count }})</div>
+            {% for a in alerts %}
+            <a href="{{ a.url }}" class="block px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+              <div class="text-sm flex items-center gap-2">
+                <span>{{ a.icon }}</span>
+                <span class="font-medium {% if a.level == 'danger' %}text-rose-500{% else %}text-amber-500{% endif %}">{{ a.title }}</span>
+              </div>
+              <div class="text-xs text-slate-500 ml-6">{{ a.detail }}</div>
+            </a>
+            {% empty %}
+            <div class="px-2 py-6 text-center text-sm text-emerald-600">All clear ✅ No alerts.</div>
+            {% endfor %}
+          </div>
+        </div>
+        <button @click="dark=!dark" class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800" title="Toggle theme">
+          <svg x-show="!dark" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+          <svg x-show="dark" x-cloak class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36l-1.42-1.42M7.05 7.05L5.64 5.64m12.72 0l-1.42 1.42M7.05 16.95l-1.41 1.41M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+        </button>
+        <div class="text-right leading-tight hidden sm:block">
+          <div class="text-sm font-medium">{{ user.get_username }}</div>
+          <div class="text-xs text-slate-500">{{ user.profile.get_role_display }}</div>
+        </div>
+        <a href="{% url 'users:logout' %}" class="text-sm px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700">Logout</a>
+      </div>
+    </header>
+
+    <main class="flex-1 p-5 overflow-x-hidden">
+      {% if messages %}
+        {% for m in messages %}
+        <div class="mb-3 rounded-md px-4 py-2 text-sm bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800">{{ m }}</div>
+        {% endfor %}
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% else %}
+  {% block auth %}{% endblock %}
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

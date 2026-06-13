@@ -1,0 +1,7 @@
+{% if page.has_other_pages %}
+<div class="flex items-center gap-2 mt-3 text-sm">
+  {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}" class="px-3 py-1 rounded bg-slate-100 dark:bg-slate-800">← Prev</a>{% endif %}
+  <span class="text-slate-500">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}<a href="?page={{ page.next_page_number }}" class="px-3 py-1 rounded bg-slate-100 dark:bg-slate-800">Next →</a>{% endif %}
+</div>
+{% endif %}

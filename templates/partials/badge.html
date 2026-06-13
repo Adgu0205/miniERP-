@@ -1,0 +1,9 @@
+{% comment %}status=raw value, label=display text{% endcomment %}
+<span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium
+  {% if status == 'draft' or status == 'pending' %}bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200
+  {% elif status == 'confirmed' %}bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300
+  {% elif status == 'in_progress' %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+  {% elif status == 'partial' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300
+  {% elif status == 'delivered' or status == 'received' or status == 'done' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+  {% elif status == 'cancelled' %}bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300
+  {% else %}bg-slate-200 text-slate-700{% endif %}">{{ label }}</span>
