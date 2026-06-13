@@ -27,6 +27,7 @@ urlpatterns = [
     path('sales/<int:so_id>/confirm/', sales.views.confirm_sales_order, name='confirm_sales_order'),
     path('sales/<int:so_id>/deliver/', sales.views.deliver_sales_order, name='deliver_sales_order'),
     path('sales/<int:so_id>/cancel/', sales.views.cancel_sales_order, name='cancel_sales_order'),
+    path('sales/<int:so_id>/edit/', sales.views.edit_sales_order, name='edit_sales_order'),
     
     # Purchases
     path('purchases/', purchases.views.purchase_list, name='purchase_list'),

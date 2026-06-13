@@ -19,12 +19,18 @@ def sales_pipeline(request):
     sales_orders = SalesOrder.objects.all().order_by('-date')
     products = Product.objects.filter(sales_price__gt=0)
 
+    # Calculate next Sales Order ID for dialog box
+    last_so = SalesOrder.objects.order_by('-id').first()
+    next_so_id = (last_so.id + 1) if last_so else 1
+    next_so_ref = f"SO-{next_so_id:03d}"
+
     # Group sales orders for Kanban columns
     kanban_orders = {
         'draft': sales_orders.filter(status='draft'),
         'confirmed': sales_orders.filter(status='confirmed'),
         'partially_delivered': sales_orders.filter(status='partially_delivered'),
         'fully_delivered': sales_orders.filter(status='fully_delivered'),
+        'cancelled': sales_orders.filter(status='cancelled'),
     }
 
     # Gather trace documents for each sales order in view
@@ -55,8 +61,10 @@ def sales_pipeline(request):
         'permissions': permissions,
         'kanban_orders': kanban_orders,
         'products': products,
+        'sales_orders': sales_orders,
         'traces': traces,
         'traces_json': json.dumps(traces),
+        'next_so_ref': next_so_ref,
     }
     return render(request, "sales_pipeline.html", context)
 
@@ -69,8 +77,15 @@ def create_sales_order(request):
 
     if request.method == 'POST':
         customer_name = request.POST.get('customerName')
+        customer_address = request.POST.get('customerAddress', '')
+        sales_person = request.POST.get('salesPerson', '')
+        order_number = request.POST.get('orderNumber', '').strip()
         items_json = request.POST.get('items')
         
+        if order_number:
+            if SalesOrder.objects.filter(order_number=order_number).exists():
+                return JsonResponse({'status': 'error', 'message': f'Sales Order ID "{order_number}" is already taken.'}, status=400)
+
         try:
             items_data = json.loads(items_json)
         except (ValueError, TypeError):
@@ -81,7 +96,10 @@ def create_sales_order(request):
 
         # Create SalesOrder header
         so = SalesOrder.objects.create(
+            order_number=order_number if order_number else None,
             customer_name=customer_name,
+            customer_address=customer_address,
+            sales_person=sales_person,
             status='draft'
         )
 
@@ -115,6 +133,113 @@ def create_sales_order(request):
         return JsonResponse({'status': 'success', 'message': 'Sales order draft saved.', 'so_id': so.id})
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
+
+@csrf_exempt
+def edit_sales_order(request, so_id):
+    role = get_current_role(request)
+    permissions = get_role_permissions(role)
+    if not permissions['can_edit_sales'] or permissions['is_read_only']:
+        return JsonResponse({'status': 'error', 'message': 'Permission Denied'}, status=403)
+
+    try:
+        so = SalesOrder.objects.get(id=so_id)
+    except SalesOrder.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Sales Order not found.'}, status=404)
+
+    if request.method == 'POST':
+        customer_name = request.POST.get('customerName')
+        customer_address = request.POST.get('customerAddress', '')
+        sales_person = request.POST.get('salesPerson', '')
+        expected_date = request.POST.get('expectedDeliveryDate', '')
+        notes = request.POST.get('notes', '')
+        items_json = request.POST.get('items', '[]')
+
+        try:
+            items_data = json.loads(items_json)
+        except (ValueError, TypeError):
+            return JsonResponse({'status': 'error', 'message': 'Invalid items lines data.'}, status=400)
+
+        # Release stock reservation if order was confirmed/partially delivered
+        if so.status in ['confirmed', 'partially_delivered']:
+            for item in so.items.all():
+                prod = item.product
+                to_deliver = item.quantity - item.delivered_quantity
+                if to_deliver > 0:
+                    prod.reserved = max(0, prod.reserved - to_deliver)
+                    prod.save()
+                    recalculate_stock_quantity(prod.id)
+
+        # Update order header
+        so.customer_name = customer_name
+        so.customer_address = customer_address
+        so.sales_person = sales_person
+        so.notes = notes
+        if expected_date:
+            so.expected_delivery_date = expected_date
+        else:
+            so.expected_delivery_date = None
+
+        # Update lines
+        existing_items = {item.product_id: item for item in so.items.all()}
+        new_product_ids = set()
+        total_amount = 0
+
+        for item in items_data:
+            prod_id = int(item['productId'])
+            qty = int(item['quantity'])
+            price = float(item['unitPrice'])
+            new_product_ids.add(prod_id)
+
+            if prod_id in existing_items:
+                line = existing_items[prod_id]
+                line.quantity = qty
+                line.unit_price = price
+                # Ensure delivered_quantity is capped at new quantity
+                if line.delivered_quantity > qty:
+                    line.delivered_quantity = qty
+                line.save()
+            else:
+                SalesOrderItem.objects.create(
+                    sales_order=so,
+                    product_id=prod_id,
+                    quantity=qty,
+                    unit_price=price,
+                    delivered_quantity=0
+                )
+            total_amount += qty * price
+
+        # Delete removed items
+        for prod_id, line in existing_items.items():
+            if prod_id not in new_product_ids:
+                line.delete()
+
+        # Re-apply reservation if order was confirmed/partially delivered
+        if so.status in ['confirmed', 'partially_delivered']:
+            for item in so.items.all():
+                prod = item.product
+                to_deliver = item.quantity - item.delivered_quantity
+                if to_deliver > 0:
+                    prod.reserved += to_deliver
+                    prod.save()
+                    recalculate_stock_quantity(prod.id)
+
+        so.total_amount = total_amount
+        so.save()
+
+        # Update status if fully delivered or confirmed
+        if so.status in ['confirmed', 'partially_delivered']:
+            all_delivered = True
+            for item in so.items.all():
+                if item.delivered_quantity < item.quantity:
+                    all_delivered = False
+                    break
+            so.status = 'fully_delivered' if all_delivered else 'partially_delivered'
+            so.save()
+
+        record_audit(request, "Sales", "Order Edit", f"Sales Order {so.ref} updated.")
+        return JsonResponse({'status': 'success', 'message': 'Sales order updated successfully.'})
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
 
 @csrf_exempt
 def confirm_sales_order(request, so_id):
@@ -224,7 +349,11 @@ def deliver_sales_order(request, so_id):
 
         for item in so.items.all():
             product = item.product
-            qty_to_deliver = int(ship_data.get(str(product.id), 0))
+            new_cumulative = int(ship_data.get(str(product.id), item.delivered_quantity))
+            
+            # Bound new_cumulative between item.delivered_quantity and item.quantity
+            new_cumulative = max(item.delivered_quantity, min(item.quantity, new_cumulative))
+            qty_to_deliver = new_cumulative - item.delivered_quantity
 
             if qty_to_deliver <= 0:
                 if item.delivered_quantity < item.quantity:
@@ -410,7 +539,7 @@ def cancel_sales_order(request, so_id):
     except SalesOrder.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Sales Order not found.'}, status=404)
 
-    if so.status not in ['draft', 'confirmed']:
+    if so.status not in ['draft', 'confirmed', 'partially_delivered']:
         return JsonResponse({'status': 'error', 'message': f'Cannot cancel order in "{so.status}" state.'}, status=400)
 
     # Release reserved stock for each item

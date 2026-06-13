@@ -5,17 +5,62 @@
 {% block heading %}Sales Order Pipelines{% endblock %}
 
 {% block content %}
-<div class="panel-header" style="background-color: var(--bg-primary); border-radius: var(--border-radius-lg); border:1px solid var(--border-color); padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); display:flex; justify-content:space-between; align-items:center;">
-  <h3 class="panel-title">Sales Order Pipelines</h3>
-  <div>
+<style>
+  .list-row:hover {
+    background-color: var(--bg-secondary);
+  }
+  .btn-view-switch {
+    background-color: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-view-switch:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+  .btn-view-switch.active {
+    background-color: var(--primary-color) !important;
+    color: #ffffff !important;
+    border-color: var(--primary-color) !important;
+  }
+  #so-search-input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+  }
+</style>
+<div class="panel-header" style="background-color: var(--bg-primary); border-radius: var(--border-radius-lg); border:1px solid var(--border-color); padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 16px;">
+  <h3 class="panel-title" style="margin:0;">Sales Order Pipelines</h3>
+  <div style="display:flex; align-items:center; gap:16px; flex-wrap: wrap;">
+    <!-- Search Bar -->
+    <div style="position:relative; min-width: 250px;">
+      <input type="text" id="so-search-input" class="form-control" placeholder="Search orders (ID, customer, salesperson)..." style="padding-left:32px; height: 38px; font-size:13px;">
+      <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size: 13px;">🔍</span>
+    </div>
+    
+    <!-- View Switcher -->
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button type="button" class="btn-view-switch active" id="btn-view-kanban" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 8px 16px; font-size:13px; font-weight:600; cursor:pointer;">
+        📋 Kanban View
+      </button>
+      <button type="button" class="btn-view-switch" id="btn-view-list" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 8px 16px; font-size:13px; font-weight:600; cursor:pointer;">
+        ☰ List View
+      </button>
+    </div>
+    
     {% if permissions.can_edit_sales and not permissions.is_read_only %}
-      <button class="btn btn-primary btn-sm" id="btn-open-create-so-modal">+ Create Sales Order</button>
+      <button class="btn btn-primary btn-sm" id="btn-open-create-so-modal" style="height: 38px; display:flex; align-items:center; justify-content:center;">+ Create Sales Order</button>
     {% endif %}
   </div>
 </div>
 
 <!-- Kanban Workspace -->
-<div class="kanban-board-container">
+<div class="kanban-board-container" style="grid-template-columns: repeat(5, 1fr);">
   <!-- Draft lane -->
   <div class="kanban-column" data-status="draft">
     <div class="kanban-column-header">
@@ -26,7 +71,7 @@
     </div>
     <div class="kanban-cards-wrapper">
       {% for so in kanban_orders.draft %}
-        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}">
+        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-address="{{ so.customer_address }}" data-salesperson="{{ so.sales_person }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}" data-notes="{{ so.notes|escapejs }}" data-expected-date="{{ so.expected_delivery_date|date:'Y-m-d' }}">
           <div class="kanban-card-header">
             <span class="kanban-card-id">{{ so.ref }}</span>
             <span style="font-size:11px; color:var(--text-muted);">{{ so.date|date:"N j" }}</span>
@@ -34,7 +79,7 @@
           <div class="kanban-card-title">{{ so.customer_name }}</div>
           <div class="kanban-card-body">
             {% for item in so.items.all %}
-              <div style="display:flex; justify-content:space-between; margin-top:2px;">
+              <div style="display:flex; justify-content:space-between; margin-top:2px;" data-product-id="{{ item.product.id }}" data-product-name="{{ item.product.name }}" data-qty="{{ item.quantity }}" data-delivered="{{ item.delivered_quantity }}" data-price="{{ item.unit_price }}">
                 <span>{{ item.product.name }}</span>
                 <strong>x{{ item.quantity }}</strong>
               </div>
@@ -59,7 +104,7 @@
     </div>
     <div class="kanban-cards-wrapper">
       {% for so in kanban_orders.confirmed %}
-        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}">
+        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-address="{{ so.customer_address }}" data-salesperson="{{ so.sales_person }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}" data-notes="{{ so.notes|escapejs }}" data-expected-date="{{ so.expected_delivery_date|date:'Y-m-d' }}">
           <div class="kanban-card-header">
             <span class="kanban-card-id">{{ so.ref }}</span>
             <span style="font-size:11px; color:var(--text-muted);">{{ so.date|date:"N j" }}</span>
@@ -67,7 +112,7 @@
           <div class="kanban-card-title">{{ so.customer_name }}</div>
           <div class="kanban-card-body">
             {% for item in so.items.all %}
-              <div style="display:flex; justify-content:space-between; margin-top:2px;">
+              <div style="display:flex; justify-content:space-between; margin-top:2px;" data-product-id="{{ item.product.id }}" data-product-name="{{ item.product.name }}" data-qty="{{ item.quantity }}" data-delivered="{{ item.delivered_quantity }}" data-price="{{ item.unit_price }}">
                 <span>{{ item.product.name }}</span>
                 <strong>x{{ item.quantity }}</strong>
               </div>
@@ -92,7 +137,7 @@
     </div>
     <div class="kanban-cards-wrapper">
       {% for so in kanban_orders.partially_delivered %}
-        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}">
+        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-address="{{ so.customer_address }}" data-salesperson="{{ so.sales_person }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}" data-notes="{{ so.notes|escapejs }}" data-expected-date="{{ so.expected_delivery_date|date:'Y-m-d' }}">
           <div class="kanban-card-header">
             <span class="kanban-card-id">{{ so.ref }}</span>
             <span style="font-size:11px; color:var(--text-muted);">{{ so.date|date:"N j" }}</span>
@@ -100,7 +145,7 @@
           <div class="kanban-card-title">{{ so.customer_name }}</div>
           <div class="kanban-card-body">
             {% for item in so.items.all %}
-              <div style="display:flex; justify-content:space-between; margin-top:2px;">
+              <div style="display:flex; justify-content:space-between; margin-top:2px;" data-product-id="{{ item.product.id }}" data-product-name="{{ item.product.name }}" data-qty="{{ item.quantity }}" data-delivered="{{ item.delivered_quantity }}" data-price="{{ item.unit_price }}">
                 <span>{{ item.product.name }}</span>
                 <strong>x{{ item.quantity }}</strong>
               </div>
@@ -125,7 +170,7 @@
     </div>
     <div class="kanban-cards-wrapper">
       {% for so in kanban_orders.fully_delivered %}
-        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}">
+        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-address="{{ so.customer_address }}" data-salesperson="{{ so.sales_person }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}" data-notes="{{ so.notes|escapejs }}" data-expected-date="{{ so.expected_delivery_date|date:'Y-m-d' }}">
           <div class="kanban-card-header">
             <span class="kanban-card-id">{{ so.ref }}</span>
             <span style="font-size:11px; color:var(--text-muted);">{{ so.date|date:"N j" }}</span>
@@ -133,7 +178,7 @@
           <div class="kanban-card-title">{{ so.customer_name }}</div>
           <div class="kanban-card-body">
             {% for item in so.items.all %}
-              <div style="display:flex; justify-content:space-between; margin-top:2px;">
+              <div style="display:flex; justify-content:space-between; margin-top:2px;" data-product-id="{{ item.product.id }}" data-product-name="{{ item.product.name }}" data-qty="{{ item.quantity }}" data-delivered="{{ item.delivered_quantity }}" data-price="{{ item.unit_price }}">
                 <span>{{ item.product.name }}</span>
                 <strong>x{{ item.quantity }}</strong>
               </div>
@@ -146,6 +191,83 @@
         </div>
       {% endfor %}
     </div>
+  </div>
+
+  <!-- Cancelled lane -->
+  <div class="kanban-column" data-status="cancelled">
+    <div class="kanban-column-header">
+      <span class="kanban-column-title">
+        <span class="badge badge-cancelled" style="border-radius:6px; font-size:11px; padding:3px 8px; background-color:#ef4444; color:#ffffff;">Cancelled</span>
+      </span>
+      <span class="kanban-card-count">{{ kanban_orders.cancelled.count }}</span>
+    </div>
+    <div class="kanban-cards-wrapper">
+      {% for so in kanban_orders.cancelled %}
+        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-address="{{ so.customer_address }}" data-salesperson="{{ so.sales_person }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}" data-notes="{{ so.notes|escapejs }}" data-expected-date="{{ so.expected_delivery_date|date:'Y-m-d' }}">
+          <div class="kanban-card-header">
+            <span class="kanban-card-id">{{ so.ref }}</span>
+            <span style="font-size:11px; color:var(--text-muted);">{{ so.date|date:"N j" }}</span>
+          </div>
+          <div class="kanban-card-title">{{ so.customer_name }}</div>
+          <div class="kanban-card-body">
+            {% for item in so.items.all %}
+              <div style="display:flex; justify-content:space-between; margin-top:2px;" data-product-id="{{ item.product.id }}" data-product-name="{{ item.product.name }}" data-qty="{{ item.quantity }}" data-delivered="{{ item.delivered_quantity }}" data-price="{{ item.unit_price }}">
+                <span>{{ item.product.name }}</span>
+                <strong>x{{ item.quantity }}</strong>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="kanban-card-footer">
+            <span class="kanban-card-price">₹{{ so.total_amount|floatformat:2 }}</span>
+            <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:#ef4444;">CANCELLED</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- List View Workspace -->
+<div class="list-view-container" id="so-list-container" style="display:none; background-color: var(--bg-primary); border-radius: var(--border-radius-lg); border:1px solid var(--border-color); padding: 24px; box-shadow: var(--shadow-sm); margin-bottom: 24px;">
+  <div style="overflow-x: auto;">
+    <table class="table" style="width:100%; border-collapse:collapse; text-align:left;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border-color);">
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase;">Sales Order ID</th>
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase;">Creation Date</th>
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase;">Customer Name</th>
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase;">Sales Person</th>
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase;">Status</th>
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase; text-align:right;">Total Amount</th>
+        </tr>
+      </thead>
+      <tbody id="so-list-tbody">
+        {% for so in sales_orders %}
+          <tr class="list-row sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-address="{{ so.customer_address }}" data-salesperson="{{ so.sales_person }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}" data-notes="{{ so.notes|escapejs }}" data-expected-date="{{ so.expected_delivery_date|date:'Y-m-d' }}" style="border-bottom:1px solid var(--border-color); cursor:pointer; transition: background-color 0.2s;">
+            <td style="padding:16px; font-weight:700; color:var(--text-primary);">{{ so.ref }}</td>
+            <td style="padding:16px; color:var(--text-secondary);">{{ so.date|date:"Y-m-d H:i" }}</td>
+            <td style="padding:16px; font-weight:600; color:var(--text-primary);">{{ so.customer_name }}</td>
+            <td style="padding:16px; color:var(--text-primary);">{{ so.sales_person|default:"N/A" }}</td>
+            <td style="padding:16px;">
+              <span class="badge badge-{% if so.status == 'fully_delivered' %}completed{% elif so.status == 'partially_delivered' %}partial{% else %}{{ so.status }}{% endif %}" style="text-transform: capitalize;">
+                {% if so.status == 'partially_delivered' %}Partially Delivered{% elif so.status == 'fully_delivered' %}Fully Delivered{% else %}{{ so.status }}{% endif %}
+              </span>
+            </td>
+            <td style="padding:16px; text-align:right; font-weight:700; color:var(--text-primary);">₹{{ so.total_amount|floatformat:2 }}</td>
+            
+            <!-- Hidden card body with item lines so the drawer script can pull items details on click -->
+            <td style="display:none;" class="kanban-card-body">
+              {% for item in so.items.all %}
+                <div data-product-id="{{ item.product.id }}" data-product-name="{{ item.product.name }}" data-qty="{{ item.quantity }}" data-delivered="{{ item.delivered_quantity }}" data-price="{{ item.unit_price }}">
+                  <span>{{ item.product.name }}</span>
+                  <strong>x{{ item.quantity }}</strong>
+                </div>
+              {% endfor %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -164,18 +286,32 @@
     </div>
 
     <div class="drawer-body">
-      <div style="margin-bottom: 24px;">
-        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:4px;">Customer Details</h4>
-        <div style="font-size:16px; font-weight:700;" id="drawer-so-customer">Customer</div>
+      <div style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:12px;">Customer Details</h4>
+        <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+          <div>
+            <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; display: block;">Customer Name</span>
+            <strong style="font-size:15px; color: var(--text-primary);" id="drawer-so-customer">Customer</strong>
+          </div>
+          <div>
+            <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; display: block;">Address</span>
+            <span style="font-size:13px; color: var(--text-primary); white-space: pre-wrap;" id="drawer-so-address">-</span>
+          </div>
+          <div>
+            <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; display: block;">Sales Person</span>
+            <span style="font-size:13px; color: var(--text-primary);" id="drawer-so-salesperson">-</span>
+          </div>
+        </div>
       </div>
 
       <div style="margin-bottom: 24px;">
         <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px;">Order Lines</h4>
         <div class="lines-list" style="margin-top:0;">
-          <div class="line-header" style="grid-template-columns: 2fr 1fr 1fr; border:none;">
+          <div class="line-header" id="drawer-so-lines-header" style="grid-template-columns: 2fr 1fr 1fr 1fr; border:none;">
             <span>Product</span>
+            <span style="text-align:center;">Price (₹)</span>
             <span style="text-align:center;">Qty Ordered</span>
-            <span style="text-align:center;">Qty Shipped</span>
+            <span style="text-align:center;">Qty Delivered</span>
           </div>
           <div id="drawer-so-lines-container">
             <!-- Rendered via JS -->
@@ -204,50 +340,154 @@
 
 <!-- Sales Order Creation form overlay -->
 <div class="modal-overlay" id="so-create-modal" style="display:none;">
-  <div class="modal-content" style="max-width: 720px;">
+  <div class="modal-content" style="max-width: 960px; width: 95%;">
     <div class="modal-header">
       <h3 class="modal-title">Create Sales Order</h3>
-      <button class="modal-close" id="close-so-modal">✕</button>
+      <button type="button" class="modal-close" id="close-so-modal">✕</button>
     </div>
     <form id="so-create-form">
       <div class="modal-body">
-        <div class="form-group" style="margin-bottom:16px;">
-          <label for="so-customer">Customer Name *</label>
-          <input type="text" id="so-customer" class="form-control" required placeholder="Enter customer company name...">
+        <!-- Customer Details Section -->
+        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:12px; margin-top:0; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">Customer & Order Details</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+          <div class="form-group">
+            <label for="so-id-input">Sales Order ID *</label>
+            <input type="text" id="so-id-input" class="form-control" value="{{ next_so_ref }}" required placeholder="e.g. {{ next_so_ref }}...">
+          </div>
+          <div class="form-group">
+            <label for="so-customer">Customer Name *</label>
+            <input type="text" id="so-customer" class="form-control" required placeholder="Enter customer company name...">
+          </div>
+          <div class="form-group">
+            <label for="so-salesperson">Sales Person *</label>
+            <input type="text" id="so-salesperson" class="form-control" value="{{ user_info.name }}" required placeholder="Enter salesperson name...">
+          </div>
+          <div class="form-group">
+            <label for="so-expected-date">Expected Delivery Date</label>
+            <input type="date" id="so-expected-date" class="form-control">
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label for="so-customer-address">Address *</label>
+            <textarea id="so-customer-address" class="form-control" rows="2" required placeholder="Enter customer address..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="so-creation-date">Creation Date</label>
+            <input type="text" id="so-creation-date" class="form-control" value="{% now 'Y-m-d' %}" readonly style="background-color: var(--bg-secondary); cursor: not-allowed;">
+          </div>
         </div>
 
-        <div class="form-group" style="margin-bottom:16px;">
-          <label for="so-expected-date">Expected Delivery Date</label>
-          <input type="date" id="so-expected-date" class="form-control">
-        </div>
-
-        <div class="form-group" style="margin-bottom:16px;">
+        <div class="form-group" style="margin-bottom:24px;">
           <label for="so-notes">Order Notes</label>
           <textarea id="so-notes" class="form-control" rows="2" placeholder="Internal notes, delivery instructions..."></textarea>
         </div>
 
+        <!-- Product details section -->
         <div style="margin-top:24px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary);">Order Lines</h4>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-so-line">+ Add Line</button>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin:0;">Product Details</h4>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-so-line" style="font-weight: 600; padding: 6px 12px;">+ Add Product Line</button>
           </div>
           
           <div class="lines-list">
-            <div class="line-header">
-              <span>Product</span>
-              <span style="text-align:right;">Quantity</span>
-              <span style="text-align:right;">Unit Price</span>
+            <div class="line-header" style="grid-template-columns: 2.5fr 1fr 1fr 1fr 1.2fr 1.2fr 40px; text-align: center; align-items: center; gap: 12px; padding: 10px 16px;">
+              <span style="text-align: left;">Product Name</span>
+              <span>Availability</span>
+              <span>Ordered Qty</span>
+              <span>Delivered Qty</span>
+              <span>Unit Price (₹)</span>
+              <span>Total (₹)</span>
               <span></span>
             </div>
             <div id="so-lines-container">
               <!-- Dynamically added -->
             </div>
           </div>
+          
+          <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-top:16px; padding:0 8px;">
+            <span style="font-weight:600; color:var(--text-secondary);">Grand Total:</span>
+            <strong style="font-weight:700; font-size:20px; color:var(--text-primary);" id="so-create-grand-total">₹0.00</strong>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" id="cancel-so-modal">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save Draft</button>
+        <button type="button" class="btn btn-secondary" id="cancel-so-modal">Back to Kanban View</button>
+        <button type="submit" class="btn btn-primary">Create Draft Order</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Sales Order Edit form overlay -->
+<div class="modal-overlay" id="so-edit-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 960px; width: 95%;">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Sales Order</h3>
+      <button type="button" class="modal-close" id="close-edit-so-modal">✕</button>
+    </div>
+    <form id="so-edit-form">
+      <input type="hidden" id="edit-so-id">
+      <div class="modal-body">
+        <!-- Customer Details Section -->
+        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:12px; margin-top:0; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">Customer & Order Details</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+          <div class="form-group">
+            <label for="edit-so-id-input">Sales Order ID (Read-only)</label>
+            <input type="text" id="edit-so-id-input" class="form-control" readonly disabled style="background-color: var(--bg-secondary); cursor: not-allowed;">
+          </div>
+          <div class="form-group">
+            <label for="edit-so-customer">Customer Name *</label>
+            <input type="text" id="edit-so-customer" class="form-control" required placeholder="Enter customer company name...">
+          </div>
+          <div class="form-group">
+            <label for="edit-so-salesperson">Sales Person *</label>
+            <input type="text" id="edit-so-salesperson" class="form-control" required placeholder="Enter salesperson name...">
+          </div>
+          <div class="form-group">
+            <label for="edit-so-expected-date">Expected Delivery Date</label>
+            <input type="date" id="edit-so-expected-date" class="form-control">
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label for="edit-so-customer-address">Address *</label>
+            <textarea id="edit-so-customer-address" class="form-control" rows="2" required placeholder="Enter customer address..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:24px;">
+          <label for="edit-so-notes">Order Notes</label>
+          <textarea id="edit-so-notes" class="form-control" rows="2" placeholder="Internal notes, delivery instructions..."></textarea>
+        </div>
+
+        <!-- Product details section -->
+        <div style="margin-top:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin:0;">Product Details</h4>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-edit-so-line" style="font-weight: 600; padding: 6px 12px;">+ Add Product Line</button>
+          </div>
+          
+          <div class="lines-list">
+            <div class="line-header" style="grid-template-columns: 2.5fr 1fr 1fr 1fr 1.2fr 1.2fr 40px; text-align: center; align-items: center; gap: 12px; padding: 10px 16px;">
+              <span style="text-align: left;">Product Name</span>
+              <span>Availability</span>
+              <span>Ordered Qty</span>
+              <span>Delivered Qty</span>
+              <span>Unit Price (₹)</span>
+              <span>Total (₹)</span>
+              <span></span>
+            </div>
+            <div id="so-edit-lines-container">
+              <!-- Dynamically added -->
+            </div>
+          </div>
+          
+          <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-top:16px; padding:0 8px;">
+            <span style="font-weight:600; color:var(--text-secondary);">Grand Total:</span>
+            <strong style="font-weight:700; font-size:20px; color:var(--text-primary);" id="so-edit-grand-total">₹0.00</strong>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel-edit-so-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
       </div>
     </form>
   </div>
@@ -315,13 +555,82 @@
   // Products lookup dictionary
   const dbProducts = [
     {% for p in products %}
-    { id: "{{ p.id }}", name: "{{ p.name|escapejs }}", sku: "{{ p.sku }}", price: {{ p.sales_price }}, onhand: {{ p.on_hand }} },
+    { id: "{{ p.id }}", name: "{{ p.name|escapejs }}", sku: "{{ p.sku }}", price: {{ p.sales_price }}, onhand: {{ p.on_hand }}, availability: {{ p.free_to_use }} },
     {% endfor %}
   ];
 
   document.addEventListener("DOMContentLoaded", () => {
     const drawer = document.getElementById("so-drawer");
-    
+    const editLinesContainer = document.getElementById("so-edit-lines-container");
+
+    const recalculateEditTotals = (row) => {
+      const qty = parseInt(row.querySelector(".line-qty-input").value) || 0;
+      const price = parseFloat(row.querySelector(".line-price-input").value) || 0;
+      const total = qty * price;
+      row.querySelector(".line-total-input").value = total.toFixed(2);
+      recalculateEditGrandTotal();
+    };
+
+    const recalculateEditGrandTotal = () => {
+      let grandTotal = 0;
+      editLinesContainer.querySelectorAll(".line-item-row").forEach(row => {
+        const rowTotal = parseFloat(row.querySelector(".line-total-input").value) || 0;
+        grandTotal += rowTotal;
+      });
+      document.getElementById("so-edit-grand-total").innerText = "₹" + grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    const addEditLine = (item = null) => {
+      const row = document.createElement("div");
+      row.className = "line-item-row";
+      row.style.gridTemplateColumns = "2.5fr 1fr 1fr 1fr 1.2fr 1.2fr 40px";
+      row.style.gap = "12px";
+      row.style.padding = "8px 16px";
+      row.style.alignItems = "center";
+
+      const selectedProdName = item ? item.name : "";
+      const selectedProd = dbProducts.find(p => p.name === selectedProdName);
+      const selectedProdId = selectedProd ? selectedProd.id : "";
+      
+      row.innerHTML = `
+        <select class="form-control line-product-select" required>
+          <option value="" disabled ${!selectedProdId ? 'selected' : ''}>Select product...</option>
+          ${dbProducts.map(p => `<option value="${p.id}" data-price="${p.price}" data-avail="${p.availability}" ${String(p.id) === String(selectedProdId) ? 'selected' : ''}>${p.name} (${p.sku})</option>`).join('')}
+        </select>
+        <input type="number" class="form-control line-avail-input" readonly value="${selectedProd ? selectedProd.availability : 0}" style="text-align:right; background-color: var(--bg-secondary); cursor: not-allowed;">
+        <input type="number" class="form-control line-qty-input" required min="1" value="${item ? item.qty : 1}" style="text-align:right;">
+        <input type="number" class="form-control line-delivered-input" readonly value="${item ? item.delivered : 0}" style="text-align:right; background-color: var(--bg-secondary); cursor: not-allowed;">
+        <input type="number" class="form-control line-price-input" required min="0" step="0.01" value="${item ? item.price.toFixed(2) : '0.00'}" style="text-align:right;">
+        <input type="number" class="form-control line-total-input" readonly value="0.00" style="text-align:right; background-color: var(--bg-secondary); cursor: not-allowed;">
+        <button type="button" class="line-remove-btn">✕</button>
+      `;
+      editLinesContainer.appendChild(row);
+
+      const prodSelect = row.querySelector(".line-product-select");
+      const qtyInput = row.querySelector(".line-qty-input");
+      const priceInput = row.querySelector(".line-price-input");
+      const availInput = row.querySelector(".line-avail-input");
+
+      prodSelect.addEventListener("change", (e) => {
+        const opt = e.target.options[e.target.selectedIndex];
+        const price = parseFloat(opt.dataset.price) || 0;
+        const avail = parseFloat(opt.dataset.avail) || 0;
+        priceInput.value = price.toFixed(2);
+        availInput.value = avail;
+        recalculateEditTotals(row);
+      });
+
+      qtyInput.addEventListener("input", () => recalculateEditTotals(row));
+      priceInput.addEventListener("input", () => recalculateEditTotals(row));
+
+      row.querySelector(".line-remove-btn").addEventListener("click", () => {
+        editLinesContainer.removeChild(row);
+        recalculateEditGrandTotal();
+      });
+
+      recalculateEditTotals(row);
+    };
+
     // Open drawer
     document.querySelectorAll(".sales-so-card").forEach(card => {
       card.addEventListener("click", () => {
@@ -331,14 +640,19 @@
         const total = parseFloat(card.dataset.total);
         const date = new Date(card.dataset.date).toLocaleString();
 
-        document.getElementById("drawer-so-ref").innerText = `SO-${String(id).padStart(3, '0')}`;
+        const address = card.dataset.address || '';
+        const salesperson = card.dataset.salesperson || '';
+
+        document.getElementById("drawer-so-ref").innerText = card.querySelector(".kanban-card-id")?.innerText || `SO-${String(id).padStart(3, '0')}`;
         document.getElementById("drawer-so-date").innerText = date;
         document.getElementById("drawer-so-customer").innerText = customer;
+        document.getElementById("drawer-so-address").innerText = address || 'N/A';
+        document.getElementById("drawer-so-salesperson").innerText = salesperson || 'N/A';
         document.getElementById("drawer-so-total").innerText = `₹` + total.toFixed(2);
         
         // Render Badge
         const badge = document.getElementById("drawer-so-status-badge");
-        badge.className = `badge badge-${status === 'fully_delivered' ? 'completed' : status === 'confirmed' ? 'confirmed' : 'draft'}`;
+        badge.className = `badge badge-${status === 'fully_delivered' ? 'completed' : status === 'confirmed' ? 'confirmed' : status === 'partially_delivered' ? 'partial' : status === 'cancelled' ? 'cancelled' : 'draft'}`;
         badge.innerText = status.replace('_', ' ');
 
         // Render Lines
@@ -348,20 +662,39 @@
         // Pull items directly from DOM card structure
         const itemsList = [];
         card.querySelectorAll(".kanban-card-body div").forEach(div => {
-          const name = div.querySelector("span").innerText;
-          const qty = parseInt(div.querySelector("strong").innerText.replace('x', ''));
-          itemsList.push({ name, qty });
+          const name = div.dataset.productName || div.querySelector("span").innerText;
+          const qty = parseInt(div.dataset.qty) || parseInt(div.querySelector("strong").innerText.replace('x', '')) || 0;
+          const delivered = parseInt(div.dataset.delivered) || 0;
+          const price = parseFloat(div.dataset.price) || 0;
+          itemsList.push({ name, qty, delivered, price });
         });
 
-        linesContainer.innerHTML = itemsList.map(item => `
-          <div class="line-item-row" style="grid-template-columns: 2fr 1fr 1fr;">
-            <span style="font-weight:600;">${item.name}</span>
-            <span style="text-align:center; font-weight:600;">${item.qty}</span>
-            <span style="text-align:center; color:var(--accent-hover); font-weight:700;">
-              ${status === 'fully_delivered' ? item.qty : 0}
-            </span>
-          </div>
-        `).join('');
+        if (canEditSales && !isReadOnly && ['confirmed', 'partially_delivered'].includes(status)) {
+          linesContainer.innerHTML = itemsList.map(item => {
+            const prod = dbProducts.find(p => p.name === item.name);
+            const prodId = prod ? prod.id : "";
+            
+            return `
+              <div class="line-item-row" style="grid-template-columns: 2fr 1fr 1fr 1fr; gap: 8px; align-items: center; padding: 8px 0;">
+                <span style="font-weight:600;">${item.name}</span>
+                <span style="text-align:center;">₹${item.price.toFixed(2)}</span>
+                <span style="text-align:center; font-weight:600;">${item.qty}</span>
+                <span style="text-align:center;">
+                  <input type="number" class="form-control drawer-delivered-input" data-prod-id="${prodId}" min="${item.delivered}" max="${item.qty}" value="${item.delivered}" style="width: 80px; text-align: right; padding: 4px 8px; margin: 0 auto; display: block;">
+                </span>
+              </div>
+            `;
+          }).join('');
+        } else {
+          linesContainer.innerHTML = itemsList.map(item => `
+            <div class="line-item-row" style="grid-template-columns: 2fr 1fr 1fr 1fr; gap: 8px; align-items: center; padding: 8px 0;">
+              <span style="font-weight:600;">${item.name}</span>
+              <span style="text-align:center;">₹${item.price.toFixed(2)}</span>
+              <span style="text-align:center; font-weight:600;">${item.qty}</span>
+              <span style="text-align:center; font-weight:700; color:var(--text-primary);">${item.delivered}</span>
+            </div>
+          `).join('');
+        }
 
         // Visual Trace route
         const traceContainer = document.getElementById("drawer-so-trace-container");
@@ -397,17 +730,17 @@
         const actionsContainer = document.getElementById("drawer-actions-container");
         actionsContainer.innerHTML = '';
         if (canEditSales && !isReadOnly) {
+          let buttons = [];
           if (status === 'draft') {
-            actionsContainer.innerHTML = `
-              <button class="btn btn-primary" id="btn-drawer-confirm" style="width:100%;">Confirm Sales Order</button>
-              <button class="btn btn-secondary" id="btn-drawer-cancel-so" style="width:100%; color:#ef4444; border-color:#ef4444;">Cancel Order</button>
-            `;
+            buttons.push(`<button class="btn btn-primary" id="btn-drawer-confirm" style="width:100%;">Confirm Sales Order</button>`);
           } else if (['confirmed', 'partially_delivered'].includes(status)) {
-            actionsContainer.innerHTML = `
-              <button class="btn btn-primary" id="btn-drawer-deliver" style="width:100%;">Deliver Products</button>
-              ${status === 'confirmed' ? '<button class="btn btn-secondary" id="btn-drawer-cancel-so" style="width:100%; color:#ef4444; border-color:#ef4444;">Cancel Order</button>' : ''}
-            `;
+            buttons.push(`<button class="btn btn-primary" id="btn-drawer-deliver" style="width:100%;">Deliver Products</button>`);
           }
+          buttons.push(`<button class="btn btn-secondary" id="btn-drawer-edit-so" style="width:100%;">✏️ Edit Order</button>`);
+          if (['draft', 'confirmed', 'partially_delivered'].includes(status)) {
+            buttons.push(`<button class="btn btn-secondary" id="btn-drawer-cancel-so" style="width:100%; color:#ef4444; border-color:#ef4444;">Cancel Order</button>`);
+          }
+          actionsContainer.innerHTML = buttons.join('');
         }
 
         drawer.style.display = "flex";
@@ -425,8 +758,70 @@
           const deliverBtn = document.getElementById("btn-drawer-deliver");
           if (deliverBtn) {
             deliverBtn.addEventListener("click", () => {
+              const deliveries = {};
+              let hasInvalid = false;
+              let hasChange = false;
+              
+              linesContainer.querySelectorAll(".drawer-delivered-input").forEach(input => {
+                const prodId = input.dataset.prodId;
+                const val = parseInt(input.value) || 0;
+                const maxVal = parseInt(input.max) || 0;
+                const minVal = parseInt(input.min) || 0;
+                
+                if (val < minVal || val > maxVal) {
+                  showToast(`Delivered quantity must be between ${minVal} and ${maxVal}`, "error");
+                  hasInvalid = true;
+                }
+                if (val > minVal) {
+                  hasChange = true;
+                }
+                deliveries[prodId] = val;
+              });
+              
+              if (hasInvalid) return;
+              if (!hasChange) {
+                showToast("Please enter a delivered quantity greater than the current value to record a delivery.", "warning");
+                return;
+              }
+              
+              const fd = new FormData();
+              fd.append('deliveries', JSON.stringify(deliveries));
+              
+              fetch(`/sales/${id}/deliver/`, { method: 'POST', body: fd })
+                .then(res => res.json())
+                .then(data => {
+                  if (data.status === 'success') {
+                    showToast(data.message, "success");
+                    drawer.style.display = "none";
+                    setTimeout(() => window.location.reload(), 1200);
+                  } else {
+                    showToast(data.message, "error");
+                  }
+                });
+            });
+          }
+
+          const editBtn = document.getElementById("btn-drawer-edit-so");
+          if (editBtn) {
+            editBtn.addEventListener("click", () => {
               drawer.style.display = "none";
-              openDeliveryValidationModal(id, itemsList);
+              
+              document.getElementById("edit-so-id").value = id;
+              document.getElementById("edit-so-id-input").value = card.querySelector(".kanban-card-id")?.innerText || `SO-${String(id).padStart(3, '0')}`;
+              document.getElementById("edit-so-customer").value = customer;
+              document.getElementById("edit-so-salesperson").value = salesperson;
+              document.getElementById("edit-so-customer-address").value = address;
+              document.getElementById("edit-so-expected-date").value = card.dataset.expectedDate || '';
+              document.getElementById("edit-so-notes").value = card.dataset.notes || '';
+              
+              const editLinesContainer = document.getElementById("so-edit-lines-container");
+              editLinesContainer.innerHTML = '';
+              
+              itemsList.forEach(item => {
+                addEditLine(item);
+              });
+              
+              document.getElementById("so-edit-modal").style.display = "flex";
             });
           }
 
@@ -463,31 +858,147 @@
       const soModal = document.getElementById("so-create-modal");
       const linesContainer = document.getElementById("so-lines-container");
 
+      const recalculateTotals = (row) => {
+        const qty = parseInt(row.querySelector(".line-qty-input").value) || 0;
+        const price = parseFloat(row.querySelector(".line-price-input").value) || 0;
+        const total = qty * price;
+        row.querySelector(".line-total-input").value = total.toFixed(2);
+        recalculateGrandTotal();
+      };
+
+      const recalculateGrandTotal = () => {
+        let grandTotal = 0;
+        linesContainer.querySelectorAll(".line-item-row").forEach(row => {
+          const rowTotal = parseFloat(row.querySelector(".line-total-input").value) || 0;
+          grandTotal += rowTotal;
+        });
+        document.getElementById("so-create-grand-total").innerText = "₹" + grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+
       const addLine = () => {
         const row = document.createElement("div");
         row.className = "line-item-row";
+        row.style.gridTemplateColumns = "2.5fr 1fr 1fr 1fr 1.2fr 1.2fr 40px";
+        row.style.gap = "12px";
+        row.style.padding = "8px 16px";
+        row.style.alignItems = "center";
+        
         row.innerHTML = `
           <select class="form-control line-product-select" required>
             <option value="" disabled selected>Select product...</option>
-            ${dbProducts.map(p => `<option value="${p.id}" data-price="${p.price}">${p.name} (${p.sku})</option>`).join('')}
+            ${dbProducts.map(p => `<option value="${p.id}" data-price="${p.price}" data-avail="${p.availability}">${p.name} (${p.sku})</option>`).join('')}
           </select>
+          <input type="number" class="form-control line-avail-input" readonly value="0" style="text-align:right; background-color: var(--bg-secondary); cursor: not-allowed;">
           <input type="number" class="form-control line-qty-input" required min="1" value="1" style="text-align:right;">
+          <input type="number" class="form-control line-delivered-input" readonly value="0" style="text-align:right; background-color: var(--bg-secondary); cursor: not-allowed;">
           <input type="number" class="form-control line-price-input" required min="0" step="0.01" value="0.00" style="text-align:right;">
+          <input type="number" class="form-control line-total-input" readonly value="0.00" style="text-align:right; background-color: var(--bg-secondary); cursor: not-allowed;">
           <button type="button" class="line-remove-btn">✕</button>
         `;
         linesContainer.appendChild(row);
 
-        row.querySelector(".line-product-select").addEventListener("change", (e) => {
+        const prodSelect = row.querySelector(".line-product-select");
+        const qtyInput = row.querySelector(".line-qty-input");
+        const priceInput = row.querySelector(".line-price-input");
+        const availInput = row.querySelector(".line-avail-input");
+
+        prodSelect.addEventListener("change", (e) => {
           const opt = e.target.options[e.target.selectedIndex];
-          row.querySelector(".line-price-input").value = parseFloat(opt.dataset.price).toFixed(2);
+          const price = parseFloat(opt.dataset.price) || 0;
+          const avail = parseFloat(opt.dataset.avail) || 0;
+          priceInput.value = price.toFixed(2);
+          availInput.value = avail;
+          recalculateTotals(row);
         });
 
-        row.querySelector(".line-remove-btn").addEventListener("click", () => linesContainer.removeChild(row));
+        qtyInput.addEventListener("input", () => recalculateTotals(row));
+        priceInput.addEventListener("input", () => recalculateTotals(row));
+
+        row.querySelector(".line-remove-btn").addEventListener("click", () => {
+          linesContainer.removeChild(row);
+          recalculateGrandTotal();
+        });
+
+        recalculateTotals(row);
       };
+
+      // View Switcher logic
+      const viewKanbanBtn = document.getElementById("btn-view-kanban");
+      const viewListBtn = document.getElementById("btn-view-list");
+      const kanbanContainer = document.querySelector(".kanban-board-container");
+      const listContainer = document.getElementById("so-list-container");
+
+      if (viewKanbanBtn && viewListBtn) {
+        const setView = (view) => {
+          if (view === "list") {
+            kanbanContainer.style.display = "none";
+            listContainer.style.display = "block";
+            viewListBtn.classList.add("active");
+            viewKanbanBtn.classList.remove("active");
+            localStorage.setItem("sales_order_view", "list");
+          } else {
+            kanbanContainer.style.display = "flex";
+            listContainer.style.display = "none";
+            viewKanbanBtn.classList.add("active");
+            viewListBtn.classList.remove("active");
+            localStorage.setItem("sales_order_view", "kanban");
+          }
+        };
+
+        viewKanbanBtn.addEventListener("click", () => setView("kanban"));
+        viewListBtn.addEventListener("click", () => setView("list"));
+
+        const savedView = localStorage.getItem("sales_order_view") || "kanban";
+        setView(savedView);
+      }
+
+      // Real-time search filter logic for both views
+      const searchInput = document.getElementById("so-search-input");
+      if (searchInput) {
+        searchInput.addEventListener("input", (e) => {
+          const q = e.target.value.toLowerCase().trim();
+          
+          // 1. Filter Kanban lanes
+          document.querySelectorAll(".kanban-column").forEach(column => {
+            let visibleCount = 0;
+            column.querySelectorAll(".sales-so-card").forEach(card => {
+              const ref = card.querySelector(".kanban-card-id").innerText.toLowerCase();
+              const customer = card.dataset.customer.toLowerCase();
+              const salesperson = (card.dataset.salesperson || '').toLowerCase();
+              
+              if (ref.includes(q) || customer.includes(q) || salesperson.includes(q)) {
+                card.style.display = "block";
+                visibleCount++;
+              } else {
+                card.style.display = "none";
+              }
+            });
+            column.querySelector(".kanban-card-count").innerText = visibleCount;
+          });
+
+          // 2. Filter List view table rows
+          document.querySelectorAll("#so-list-tbody .list-row").forEach(row => {
+            const ref = row.querySelector("td:first-child").innerText.toLowerCase();
+            const customer = row.dataset.customer.toLowerCase();
+            const salesperson = (row.dataset.salesperson || '').toLowerCase();
+            
+            if (ref.includes(q) || customer.includes(q) || salesperson.includes(q)) {
+              row.style.display = "table-row";
+            } else {
+              row.style.display = "none";
+            }
+          });
+        });
+      }
 
       document.getElementById("btn-open-create-so-modal").addEventListener("click", () => {
         linesContainer.innerHTML = '';
         addLine();
+        // Reset custom input to latest pre-calculated next SO ID
+        const customIdInput = document.getElementById("so-id-input");
+        if (customIdInput) {
+          customIdInput.value = "{{ next_so_ref }}";
+        }
         soModal.style.display = "flex";
       });
 
@@ -512,6 +1023,9 @@
 
         const fd = new FormData();
         fd.append('customerName', document.getElementById("so-customer").value);
+        fd.append('customerAddress', document.getElementById("so-customer-address").value);
+        fd.append('salesPerson', document.getElementById("so-salesperson").value);
+        fd.append('orderNumber', document.getElementById("so-id-input").value);
         fd.append('items', JSON.stringify(items));
         fd.append('notes', document.getElementById("so-notes").value || '');
         fd.append('expectedDeliveryDate', document.getElementById("so-expected-date").value || '');
@@ -522,6 +1036,52 @@
             if (data.status === 'success') {
               showToast(data.message, "success");
               hideSoModal();
+              setTimeout(() => window.location.reload(), 1000);
+            } else {
+              showToast(data.message, "error");
+            }
+          });
+      });
+
+      // Edit SO Modal handlers
+      document.getElementById("btn-add-edit-so-line").addEventListener("click", () => {
+        addEditLine();
+      });
+
+      const hideEditSoModal = () => {
+        document.getElementById("so-edit-modal").style.display = "none";
+      };
+      document.getElementById("close-edit-so-modal").addEventListener("click", hideEditSoModal);
+      document.getElementById("cancel-edit-so-modal").addEventListener("click", hideEditSoModal);
+
+      document.getElementById("so-edit-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const soId = document.getElementById("edit-so-id").value;
+        const items = [];
+        
+        document.querySelectorAll("#so-edit-lines-container .line-item-row").forEach(row => {
+          const sel = row.querySelector(".line-product-select");
+          const qty = parseInt(row.querySelector(".line-qty-input").value) || 0;
+          const pr = parseFloat(row.querySelector(".line-price-input").value) || 0;
+          if (sel.value && qty > 0) {
+            items.push({ productId: sel.value, quantity: qty, unitPrice: pr });
+          }
+        });
+
+        const fd = new FormData();
+        fd.append('customerName', document.getElementById("edit-so-customer").value);
+        fd.append('customerAddress', document.getElementById("edit-so-customer-address").value);
+        fd.append('salesPerson', document.getElementById("edit-so-salesperson").value);
+        fd.append('items', JSON.stringify(items));
+        fd.append('notes', document.getElementById("edit-so-notes").value || '');
+        fd.append('expectedDeliveryDate', document.getElementById("edit-so-expected-date").value || '');
+
+        fetch(`/sales/${soId}/edit/`, { method: 'POST', body: fd })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              showToast(data.message, "success");
+              hideEditSoModal();
               setTimeout(() => window.location.reload(), 1000);
             } else {
               showToast(data.message, "error");
