@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block breadcrumb %}BoM / {{ bom.product.name }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">BoM: {{ bom.product.name }} <span class="text-sm text-slate-500">(produces {{ bom.quantity }})</span></h1>
+  <a href="{% url 'manufacturing:bom_list' %}" class="text-sm text-slate-500 hover:underline">← Back</a>
+</div>
+<p class="text-xs text-slate-500 mb-3">Edit components & operations via the <a href="/admin/manufacturing/bom/{{ bom.pk }}/change/" class="text-violet-600 underline">admin</a> (inline rows).</p>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="card p-5">
+    <h3 class="font-semibold text-sm mb-3">Components</h3>
+    <table class="erp"><thead><tr><th>Component</th><th class="text-right">Qty</th><th class="text-right">Line Cost ₹</th></tr></thead>
+      <tbody>{% for l in bom.lines.all %}<tr><td>{{ l.component.name }}</td><td class="text-right">{{ l.quantity }}</td><td class="text-right">{{ l.line_cost }}</td></tr>
+      {% empty %}<tr><td colspan="3" class="text-slate-500 py-4 text-center">No components.</td></tr>{% endfor %}</tbody>
+      <tfoot><tr class="font-semibold"><td colspan="2" class="text-right">Total Cost</td><td class="text-right">₹{{ bom.component_cost }}</td></tr></tfoot>
+    </table>
+  </div>
+  <div class="card p-5">
+    <h3 class="font-semibold text-sm mb-3">Operations</h3>
+    <table class="erp"><thead><tr><th>Seq</th><th>Operation</th><th>Work Center</th><th class="text-right">Mins</th></tr></thead>
+      <tbody>{% for op in bom.operations.all %}<tr><td>{{ op.sequence }}</td><td>{{ op.name }}</td><td>{{ op.work_center.name|default:"—" }}</td><td class="text-right">{{ op.duration_mins }}</td></tr>
+      {% empty %}<tr><td colspan="4" class="text-slate-500 py-4 text-center">No operations.</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

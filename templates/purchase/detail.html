@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Purchase / {{ po.reference }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h1 class="text-xl font-semibold">{{ po.reference }}
+      {% include "partials/badge.html" with status=po.status label=po.get_status_display %}</h1>
+    <p class="text-sm text-slate-500">{{ po.vendor.name|default:"No vendor" }} · {{ po.order_date }}{% if po.origin %} · {{ po.origin }}{% endif %}</p>
+  </div>
+  <div class="flex gap-2">
+    {% if po.status == 'draft' %}
+      <a href="{% url 'purchase:edit' po.pk %}" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">Edit</a>
+      <a href="{% url 'purchase:action' po.pk 'confirm' %}" class="text-sm px-4 py-2 rounded-md bg-sky-600 text-white">Confirm</a>
+    {% elif po.status == 'confirmed' or po.status == 'partial' %}
+      <a href="{% url 'purchase:action' po.pk 'receive' %}" class="text-sm px-4 py-2 rounded-md bg-emerald-600 text-white">Receive All</a>
+    {% endif %}
+  </div>
+</div>
+<div class="card overflow-x-auto"><table class="erp">
+  <thead><tr><th>Product</th><th class="text-right">Ordered</th><th class="text-right">Received</th><th class="text-right">Remaining</th><th class="text-right">Unit ₹</th><th class="text-right">Subtotal</th></tr></thead>
+  <tbody>{% for l in lines %}<tr>
+    <td class="font-medium">{{ l.product.name }}</td>
+    <td class="text-right">{{ l.quantity }}</td>
+    <td class="text-right text-emerald-600">{{ l.received_qty }}</td>
+    <td class="text-right">{{ l.remaining }}</td>
+    <td class="text-right">{{ l.unit_price }}</td>
+    <td class="text-right">{{ l.subtotal }}</td>
+  </tr>{% endfor %}</tbody>
+  <tfoot><tr class="font-semibold"><td colspan="5" class="text-right">Total</td><td class="text-right">₹{{ po.total }}</td></tr></tfoot>
+</table></div>
+{% endblock %}

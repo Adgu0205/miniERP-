@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Inventory{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Stock Overview</h1>
+  <a href="{% url 'inventory:ledger' %}" class="text-sm px-3 py-2 rounded-md bg-violet-600 text-white">Stock Ledger →</a>
+</div>
+<div class="card overflow-x-auto"><table class="erp">
+  <thead><tr><th>Product</th><th>SKU</th><th class="text-right">On Hand</th><th class="text-right">Reserved</th>
+    <th class="text-right">Free to Use</th><th class="text-right">Stock Value ₹</th></tr></thead>
+  <tbody>{% for p in products %}<tr>
+    <td class="font-medium">{{ p.name }}</td><td class="text-slate-500">{{ p.sku }}</td>
+    <td class="text-right">{{ p.on_hand }}</td>
+    <td class="text-right text-amber-600">{{ p.reserved }}</td>
+    <td class="text-right font-semibold {% if p.free_to_use <= 0 %}text-rose-500{% else %}text-emerald-600{% endif %}">{{ p.free_to_use }}</td>
+    <td class="text-right">{{ p.stock_value }}</td>
+  </tr>{% empty %}<tr><td colspan="6" class="text-center text-slate-500 py-8">No products.</td></tr>{% endfor %}</tbody>
+</table></div>
+<p class="text-xs text-slate-400 mt-3">Free to Use = On Hand − Reserved. All movement recorded in the Stock Ledger.</p>
+{% endblock %}

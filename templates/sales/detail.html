@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Sales / {{ so.reference }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h1 class="text-xl font-semibold">{{ so.reference }}
+      {% include "partials/badge.html" with status=so.status label=so.get_status_display %}</h1>
+    <p class="text-sm text-slate-500">{{ so.customer.name|default:"No customer" }} · {{ so.order_date }}</p>
+  </div>
+  <div class="flex gap-2">
+    {% if so.status == 'draft' %}
+      <a href="{% url 'sales:edit' so.pk %}" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">Edit</a>
+      <a href="{% url 'sales:action' so.pk 'confirm' %}" class="text-sm px-4 py-2 rounded-md bg-sky-600 text-white">Confirm</a>
+      <a href="{% url 'sales:action' so.pk 'cancel' %}" class="text-sm px-3 py-2 rounded-md bg-rose-100 text-rose-700">Cancel</a>
+    {% elif so.status == 'confirmed' or so.status == 'partial' %}
+      <a href="{% url 'sales:action' so.pk 'deliver' %}" class="text-sm px-4 py-2 rounded-md bg-emerald-600 text-white">Deliver</a>
+      <a href="{% url 'sales:action' so.pk 'cancel' %}" class="text-sm px-3 py-2 rounded-md bg-rose-100 text-rose-700">Cancel</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card overflow-x-auto">
+  <table class="erp">
+    <thead><tr><th>Product</th><th class="text-right">Ordered</th><th class="text-right">Delivered</th>
+      <th class="text-right">Free Stock</th><th class="text-right">Shortage</th><th class="text-right">Unit ₹</th><th class="text-right">Subtotal</th></tr></thead>
+    <tbody>
+      {% for row in availability %}
+      <tr>
+        <td class="font-medium">{{ row.line.product.name }}</td>
+        <td class="text-right">{{ row.line.quantity }}</td>
+        <td class="text-right">{{ row.line.delivered_qty }}</td>
+        <td class="text-right {% if row.free <= 0 %}text-rose-500{% else %}text-emerald-600{% endif %}">{{ row.free }}</td>
+        <td class="text-right {% if row.shortage > 0 %}text-amber-600 font-semibold{% endif %}">{{ row.shortage }}</td>
+        <td class="text-right">{{ row.line.unit_price }}</td>
+        <td class="text-right">{{ row.line.subtotal }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot><tr class="font-semibold"><td colspan="6" class="text-right">Total</td><td class="text-right">₹{{ so.total }}</td></tr></tfoot>
+  </table>
+</div>
+{% endblock %}

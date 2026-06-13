@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load erp_extras %}
+{% block breadcrumb %}Sales Orders{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Sales Orders</h1>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'sales:customers' %}" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">Customers</a>
+    <a href="?view=list" class="text-sm px-3 py-2 rounded-md {% if view != 'kanban' %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">List</a>
+    <a href="?view=kanban" class="text-sm px-3 py-2 rounded-md {% if view == 'kanban' %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">Kanban</a>
+    <a href="?status={{ sel_status }}&export=csv" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">⬇ CSV</a>
+    <a href="{% url 'sales:new' %}" class="rounded-md bg-violet-600 hover:bg-violet-700 text-white text-sm px-4 py-2">+ New</a>
+  </div>
+</div>
+
+{% if view == 'kanban' %}
+<p class="text-xs text-slate-400 mb-2">Drag a card between columns to change its status (confirm reserves stock & triggers procurement).</p>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="kanban"
+     data-base="/sales" data-map='{"confirmed":"confirm","partial":"deliver","delivered":"deliver","cancelled":"cancel"}'>
+  {% for code, label in statuses %}
+  <div class="rounded-xl p-2 bg-slate-200/50 dark:bg-slate-900 kcol" data-status="{{ code }}">
+    <div class="flex items-center justify-between text-xs font-semibold text-slate-500 px-2 py-1">
+      <span class="flex items-center gap-1.5">
+        <span class="h-2 w-2 rounded-full
+          {% if code == 'draft' %}bg-slate-400{% elif code == 'confirmed' %}bg-sky-500{% elif code == 'partial' %}bg-indigo-500{% elif code == 'delivered' %}bg-emerald-500{% else %}bg-rose-500{% endif %}"></span>
+        {{ label }}</span>
+      <span class="opacity-60">{{ columns|get_item:code|length }}</span>
+    </div>
+    <div class="space-y-2 min-h-[60px] kdrop">
+      {% for so in columns|get_item:code %}
+      <div class="card p-3 hover:shadow cursor-grab active:cursor-grabbing kcard" draggable="true" data-pk="{{ so.pk }}">
+        <div class="flex justify-between items-center">
+          <a href="{% url 'sales:detail' so.pk %}" class="font-medium text-sm text-violet-600 hover:underline">{{ so.reference }}</a>
+          {% if so.is_delayed %}<span class="text-xs text-rose-500">⚠</span>{% endif %}
+        </div>
+        <div class="text-xs text-slate-500 truncate">{{ so.customer.name|default:"—" }}</div>
+        <div class="text-xs mt-1 font-medium">₹{{ so.total }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<script>
+(function(){
+  const board=document.getElementById('kanban'); if(!board)return;
+  const base=board.dataset.base, map=JSON.parse(board.dataset.map);
+  let dragged=null;
+  board.querySelectorAll('.kcard').forEach(c=>{
+    c.addEventListener('dragstart',e=>{dragged=c;c.style.opacity=.4;});
+    c.addEventListener('dragend',()=>{c.style.opacity=1;});
+  });
+  board.querySelectorAll('.kcol').forEach(col=>{
+    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('ring-2','ring-violet-400');});
+    col.addEventListener('dragleave',()=>col.classList.remove('ring-2','ring-violet-400'));
+    col.addEventListener('drop',e=>{
+      e.preventDefault();col.classList.remove('ring-2','ring-violet-400');
+      if(!dragged)return;
+      const pk=dragged.dataset.pk, action=map[col.dataset.status];
+      if(action){ window.location=`${base}/${pk}/${action}/`; }
+    });
+  });
+})();
+</script>
+{% else %}
+<div class="mb-3 flex gap-1 text-xs">
+  <a href="?" class="px-2 py-1 rounded {% if not sel_status %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">All</a>
+  {% for code, label in statuses %}<a href="?status={{ code }}" class="px-2 py-1 rounded {% if sel_status == code %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">{{ label }}</a>{% endfor %}
+</div>
+<div class="card overflow-x-auto">
+  <table class="erp">
+    <thead><tr><th>Reference</th><th>Customer</th><th>Date</th><th>Deadline</th><th class="text-right">Total ₹</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for so in orders %}
+      <tr>
+        <td><a href="{% url 'sales:detail' so.pk %}" class="text-violet-600 hover:underline font-medium">{{ so.reference }}</a></td>
+        <td>{{ so.customer.name|default:"—" }}</td>
+        <td class="text-slate-500">{{ so.order_date }}</td>
+        <td class="{% if so.is_delayed %}text-rose-500 font-medium{% endif %}">{{ so.deadline|default:"—" }}{% if so.is_delayed %} ⚠{% endif %}</td>
+        <td class="text-right">{{ so.total }}</td>
+        <td>{% include "partials/badge.html" with status=so.status label=so.get_status_display %}</td>
+      </tr>
+      {% empty %}<tr><td colspan="6" class="text-center text-slate-500 py-8">No sales orders.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

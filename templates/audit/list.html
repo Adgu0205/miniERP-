@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Audit Logs{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Audit Logs</h1>
+<form class="flex flex-wrap gap-2 mb-3 text-sm">
+  <select name="module" class="inp max-w-xs" onchange="this.form.submit()">
+    <option value="">All modules</option>
+    {% for m in modules %}<option value="{{ m }}" {% if sel_module == m %}selected{% endif %}>{{ m|title }}</option>{% endfor %}
+  </select>
+  <select name="action" class="inp max-w-xs" onchange="this.form.submit()">
+    <option value="">All actions</option>
+    {% for code, label in actions %}<option value="{{ code }}" {% if sel_action == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+</form>
+<div class="card overflow-x-auto"><table class="erp">
+  <thead><tr><th>When</th><th>Module</th><th>Action</th><th>Object</th><th>Field</th><th>Change</th><th>Description</th><th>User</th></tr></thead>
+  <tbody>{% for l in page %}<tr>
+    <td class="text-slate-500 whitespace-nowrap">{{ l.timestamp|date:"d M H:i:s" }}</td>
+    <td class="text-xs"><span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800">{{ l.module }}</span></td>
+    <td>{{ l.get_action_display }}</td>
+    <td class="text-xs">{{ l.object_ref }}</td>
+    <td class="text-xs text-slate-500">{{ l.field }}</td>
+    <td class="text-xs">{% if l.old_value or l.new_value %}{{ l.old_value }} → {{ l.new_value }}{% endif %}</td>
+    <td class="text-xs text-slate-500">{{ l.description }}</td>
+    <td class="text-xs">{{ l.user.username|default:"system" }}</td>
+  </tr>{% empty %}<tr><td colspan="8" class="text-center text-slate-500 py-8">No audit entries.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

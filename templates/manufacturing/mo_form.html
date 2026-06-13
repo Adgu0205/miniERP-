@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Manufacturing / {% if mo %}{{ mo.reference }}{% else %}New{% endif %}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">{% if mo %}Edit{% else %}New{% endif %} Manufacturing Order</h1>
+  <a href="{% url 'manufacturing:list' %}" class="text-sm text-slate-500 hover:underline">← Back</a>
+</div>
+<form method="post" class="card p-6 max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-4">
+  {% csrf_token %}
+  {% for field in form %}
+  <div><label class="block text-xs font-medium text-slate-500 mb-1">{{ field.label }}</label>{{ field }}</div>
+  {% endfor %}
+  <div class="md:col-span-2"><button class="rounded-md bg-violet-600 text-white text-sm px-5 py-2">Save</button></div>
+</form>
+{% endblock %}

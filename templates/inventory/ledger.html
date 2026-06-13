@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Inventory / Stock Ledger{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Stock Ledger</h1>
+  <a href="?product={{ sel_product }}&type={{ sel_type }}&export=csv" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">⬇ Export CSV</a>
+</div>
+<form class="flex flex-wrap gap-2 mb-3 text-sm">
+  <select name="product" class="inp max-w-xs" onchange="this.form.submit()">
+    <option value="">All products</option>
+    {% for p in products %}<option value="{{ p.pk }}" {% if sel_product == p.pk|stringformat:'s' %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+  </select>
+  <select name="type" class="inp max-w-xs" onchange="this.form.submit()">
+    <option value="">All movements</option>
+    {% for code, label in types %}<option value="{{ code }}" {% if sel_type == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select>
+</form>
+<div class="card overflow-x-auto"><table class="erp">
+  <thead><tr><th>Date</th><th>Product</th><th>Movement</th><th class="text-right">Qty</th><th class="text-right">Balance</th><th>Reference</th><th>By</th></tr></thead>
+  <tbody>{% for e in page %}<tr>
+    <td class="text-slate-500 whitespace-nowrap">{{ e.created_at|date:"d M Y H:i" }}</td>
+    <td class="font-medium">{{ e.product.name }}</td>
+    <td>{{ e.get_movement_type_display }}</td>
+    <td class="text-right font-semibold {% if e.quantity < 0 %}text-rose-500{% else %}text-emerald-600{% endif %}">{{ e.quantity }}</td>
+    <td class="text-right">{{ e.balance_after }}</td>
+    <td class="text-xs text-slate-500">{{ e.reference }}</td>
+    <td class="text-xs text-slate-500">{{ e.created_by.username|default:"system" }}</td>
+  </tr>{% empty %}<tr><td colspan="7" class="text-center text-slate-500 py-8">No movements yet.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

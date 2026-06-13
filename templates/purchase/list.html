@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Purchase Orders{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Purchase Orders</h1>
+  <div class="flex gap-2">
+    <a href="{% url 'purchase:vendors' %}" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">Vendors</a>
+    <a href="?status={{ sel_status }}&export=csv" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">⬇ CSV</a>
+    <a href="{% url 'purchase:new' %}" class="rounded-md bg-violet-600 text-white text-sm px-4 py-2">+ New</a>
+  </div>
+</div>
+<div class="mb-3 flex gap-1 text-xs">
+  <a href="?" class="px-2 py-1 rounded {% if not sel_status %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">All</a>
+  {% for code, label in statuses %}<a href="?status={{ code }}" class="px-2 py-1 rounded {% if sel_status == code %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">{{ label }}</a>{% endfor %}
+</div>
+<div class="card overflow-x-auto"><table class="erp">
+  <thead><tr><th>Reference</th><th>Vendor</th><th>Origin</th><th>Date</th><th class="text-right">Total ₹</th><th>Status</th></tr></thead>
+  <tbody>
+    {% for po in orders %}
+    <tr>
+      <td><a href="{% url 'purchase:detail' po.pk %}" class="text-violet-600 hover:underline font-medium">{{ po.reference }}</a></td>
+      <td>{{ po.vendor.name|default:"—" }}</td>
+      <td class="text-xs text-slate-500">{{ po.origin }}</td>
+      <td class="text-slate-500">{{ po.order_date }}</td>
+      <td class="text-right">{{ po.total }}</td>
+      <td>{% include "partials/badge.html" with status=po.status label=po.get_status_display %}</td>
+    </tr>
+    {% empty %}<tr><td colspan="6" class="text-center text-slate-500 py-8">No purchase orders.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

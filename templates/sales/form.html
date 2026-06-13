@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Sales / {% if so %}{{ so.reference }}{% else %}New{% endif %}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">{% if so %}Edit{% else %}New{% endif %} Sales Order</h1>
+  <a href="{% url 'sales:list' %}" class="text-sm text-slate-500 hover:underline">← Back</a>
+</div>
+<form method="post" class="space-y-4" x-data>
+  {% csrf_token %}
+  <div class="card p-5 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+    {% for field in form %}
+    <div><label class="block text-xs font-medium text-slate-500 mb-1">{{ field.label }}</label>{{ field }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="card p-5">
+    <h3 class="font-semibold text-sm mb-3">Order Lines</h3>
+    {{ formset.management_form }}
+    <table class="erp">
+      <thead><tr><th>Product</th><th>Quantity</th><th>Unit Price ₹</th><th></th></tr></thead>
+      <tbody>
+        {% for f in formset %}
+        <tr>
+          {% for h in f.hidden_fields %}{{ h }}{% endfor %}
+          <td>{{ f.product }}</td><td>{{ f.quantity }}</td><td>{{ f.unit_price }}</td>
+          <td>{% if f.instance.pk %}{{ f.DELETE }}<span class="text-xs text-slate-400">del</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="text-xs text-slate-400 mt-2">Tip: confirm the order after saving to reserve stock & auto-trigger procurement.</p>
+  </div>
+  <button class="rounded-md bg-violet-600 hover:bg-violet-700 text-white text-sm px-5 py-2">Save</button>
+</form>
+{% endblock %}

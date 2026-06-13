@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Procurement{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h1 class="text-xl font-semibold">Procurement Engine</h1>
+    <p class="text-sm text-slate-500">Auto-replenishment: shortage → Purchase or Manufacturing Order.</p>
+  </div>
+  <a href="{% url 'procurement:scan' %}" class="rounded-md bg-violet-600 text-white text-sm px-4 py-2">Run Stock Scan</a>
+</div>
+
+<div class="card p-5 mb-5">
+  <div class="flex items-center justify-between mb-3">
+    <div>
+      <h3 class="font-semibold text-sm">🔮 Demand Forecast & Reorder Suggestions</h3>
+      <p class="text-xs text-slate-400">Moving-average over last 30 days · covers demand during lead time + reorder point.</p>
+    </div>
+  </div>
+  {% if forecasts %}
+  <table class="erp"><thead><tr>
+    <th>Product</th><th class="text-right">Avg/day</th><th class="text-right">Pred. 30d</th>
+    <th class="text-right">Free</th><th class="text-right">Days cover</th><th class="text-right">Lead</th>
+    <th class="text-right">Suggested</th><th>Action</th></tr></thead>
+    <tbody>{% for f in forecasts %}<tr>
+      <td class="font-medium">{{ f.product.name }}</td>
+      <td class="text-right">{{ f.avg_daily }}</td>
+      <td class="text-right">{{ f.predicted_30 }}</td>
+      <td class="text-right {% if f.free <= 0 %}text-rose-500{% endif %}">{{ f.free }}</td>
+      <td class="text-right {% if f.days_cover != None and f.days_cover <= f.lead_days %}text-amber-600 font-semibold{% endif %}">{{ f.days_cover|default:"—" }}</td>
+      <td class="text-right">{{ f.lead_days }}d</td>
+      <td class="text-right font-semibold text-violet-600">{{ f.suggested }}</td>
+      <td><a href="{% url 'procurement:replenish' f.product.pk %}" class="text-xs px-2.5 py-1 rounded-md text-white {% if f.action == 'manufacture' %}bg-sky-600{% else %}bg-emerald-600{% endif %}">
+        {% if f.action == 'manufacture' %}Make{% else %}Buy{% endif %} {{ f.suggested }}</a></td>
+    </tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="text-sm text-emerald-600">No replenishment suggested — stock covers forecast demand. ✅</p>{% endif %}
+</div>
+
+<div class="card p-5 mb-5">
+  <h3 class="font-semibold text-sm mb-3">Live Shortages</h3>
+  {% if shortages %}
+  <table class="erp"><thead><tr><th>Product</th><th>Source</th><th class="text-right">Shortage</th></tr></thead>
+    <tbody>{% for s in shortages %}<tr>
+      <td class="font-medium">{{ s.product.name }}</td>
+      <td>{{ s.product.get_procurement_type_display }}</td>
+      <td class="text-right text-amber-600 font-semibold">{{ s.shortage }}</td>
+    </tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="text-sm text-emerald-600">No shortages. All committed demand is covered. ✅</p>{% endif %}
+</div>
+
+<div class="card p-5">
+  <h3 class="font-semibold text-sm mb-3">Procurement Decision Log</h3>
+  <table class="erp"><thead><tr><th>When</th><th>Product</th><th>Trigger</th><th class="text-right">Shortage</th><th>Action</th><th>Order</th></tr></thead>
+    <tbody>{% for l in logs %}<tr>
+      <td class="text-slate-500 whitespace-nowrap">{{ l.created_at|date:"d M H:i" }}</td>
+      <td class="font-medium">{{ l.product.name }}</td>
+      <td class="text-xs text-slate-500">{{ l.trigger }}</td>
+      <td class="text-right">{{ l.shortage }}</td>
+      <td><span class="text-xs px-2 py-0.5 rounded {% if l.action == 'manufacture' %}bg-sky-100 text-sky-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">{{ l.get_action_display }}</span></td>
+      <td class="text-xs font-medium">{{ l.result_ref }}</td>
+    </tr>{% empty %}<tr><td colspan="6" class="text-center text-slate-500 py-8">No automated procurement yet. Confirm an MTO sales order to see it in action.</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block breadcrumb %}BoM / {% if bom %}Edit{% else %}New{% endif %}{% endblock %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">{% if bom %}Edit{% else %}New{% endif %} Bill of Materials</h1>
+<form method="post" class="card p-6 max-w-lg space-y-3">
+  {% csrf_token %}
+  {% for field in form %}<div><label class="block text-xs font-medium text-slate-500 mb-1">{{ field.label }}</label>{{ field }}</div>{% endfor %}
+  <button class="rounded-md bg-violet-600 text-white text-sm px-5 py-2">Save</button>
+  <p class="text-xs text-slate-400">After saving, add components & operations from the BoM detail / admin.</p>
+</form>
+{% endblock %}

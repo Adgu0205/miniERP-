@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Purchase / Vendors{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Vendors</h1>
+  <a href="{% url 'purchase:vendor_new' %}" class="rounded-md bg-violet-600 text-white text-sm px-4 py-2">+ New</a>
+</div>
+<div class="card overflow-x-auto"><table class="erp">
+  <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th class="text-right">Lead Time (d)</th></tr></thead>
+  <tbody>{% for v in vendors %}<tr>
+    <td><a href="{% url 'purchase:vendor_edit' v.pk %}" class="text-violet-600 hover:underline">{{ v.name }}</a></td>
+    <td class="text-slate-500">{{ v.email }}</td><td>{{ v.phone }}</td><td class="text-right">{{ v.lead_time_days }}</td>
+  </tr>{% empty %}<tr><td colspan="4" class="text-center text-slate-500 py-8">No vendors.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}
