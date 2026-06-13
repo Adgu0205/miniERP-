@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Products Catalog{% endblock %}
+{% block heading %}Product Catalog & Master Inventory{% endblock %}
+
+{% block content %}
+<div class="products-panel card-panel">
+  <div class="panel-header">
+    <h3 class="panel-title">Product Catalog & Master Inventory</h3>
+    <div style="display:flex; gap:12px;">
+      <input type="text" id="search-products-input" placeholder="Search by SKU or name..." class="form-control" style="width:240px; padding: 6px 12px; font-size:13px;">
+      {% if permissions.can_edit_products and not permissions.is_read_only %}
+        <button class="btn btn-primary btn-sm" id="btn-open-create-prod-modal">+ New Product</button>
+      {% endif %}
+    </div>
+  </div>
+  
+  <div class="table-responsive">
+    <table class="erp-table" id="products-list-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Name</th>
+          <th>Category</th>
+          <th style="text-align:right;">Cost Price</th>
+          <th style="text-align:right;">Sales Price</th>
+          <th style="text-align:center;">On Hand</th>
+          <th style="text-align:center;">Reserved</th>
+          <th style="text-align:center;">Free To Use</th>
+          <th>Replenishment Rule</th>
+          <th>Preferred Vendor</th>
+          <th>BoM Recipe</th>
+          <th>Status</th>
+          {% if permissions.can_edit_products and not permissions.is_read_only %}
+            <th>Actions</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody id="products-table-body">
+        {% for p in products %}
+          <tr data-id="{{ p.id }}" data-search="{{ p.sku|lower }} {{ p.name|lower }}">
+            <td style="font-weight:700;">{{ p.sku }}</td>
+            <td style="font-weight:600; color:var(--text-primary);">{{ p.name }}</td>
+            <td><span style="font-size:12px; color:var(--text-secondary);">{{ p.category }}</span></td>
+            <td style="text-align:right;">₹{{ p.cost_price|floatformat:2 }}</td>
+            <td style="text-align:right;">₹{{ p.sales_price|floatformat:2 }}</td>
+            <td style="text-align:center; font-weight:700; color: #111111;">{{ p.on_hand }}</td>
+            <td style="text-align:center; color:{% if p.reserved > 0 %}#ef4444{% else %}var(--text-muted){% endif %}; font-weight:600;">
+              {{ p.reserved }}
+            </td>
+            <td style="text-align:center; font-weight:700; color:var(--accent-hover);">{{ p.free_to_use }}</td>
+            <td>
+              <span class="badge {% if p.procure_strategy == 'MTO' %}badge-mto{% else %}badge-mts{% endif %}">
+                {{ p.procure_strategy }} - {{ p.procure_type }}
+              </span>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">
+                Min limit: {{ p.reorder_threshold }}
+              </div>
+            </td>
+            <td style="font-size:13px; color:var(--text-secondary);">{{ p.vendor|default:"-" }}</td>
+            <td>
+              {% if p.id in bom_linked_product_ids %}
+                <span style="font-size:12px; color:var(--accent-hover); font-weight:600;">Linked Recipe</span>
+              {% else %}
+                <span style="font-size:12px; color:var(--text-muted);">No Recipe</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge" style="background-color:{% if p.status == 'Low Stock' %}#fef3c7{% else %}var(--accent-light){% endif %}; color:{% if p.status == 'Low Stock' %}#b45309{% else %}var(--accent-hover){% endif %};">
+                {{ p.status }}
+              </span>
+            </td>
+            {% if permissions.can_edit_products and not permissions.is_read_only %}
+              <td>
+                <button class="btn btn-secondary btn-sm edit-prod-btn" 
+                        data-id="{{ p.id }}"
+                        data-name="{{ p.name }}"
+                        data-sku="{{ p.sku }}"
+                        data-category="{{ p.category }}"
+                        data-cost="{{ p.cost_price }}"
+                        data-sales="{{ p.sales_price }}"
+                        data-strategy="{{ p.procure_strategy }}"
+                        data-type="{{ p.procure_type }}"
+                        data-vendor="{{ p.vendor|default:'' }}"
+                        data-threshold="{{ p.reorder_threshold }}"
+                        data-onhand="{{ p.on_hand }}"
+                        style="padding:4px 8px; font-size:11px;">Edit</button>
+              </td>
+            {% endif %}
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="13" style="text-align:center; color:var(--text-muted);">No products registered.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Form overlay -->
+<div class="modal-overlay" id="product-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-title-text">Catalog New Product</h3>
+      <button class="modal-close" id="close-prod-modal">✕</button>
+    </div>
+    <form id="product-modal-form">
+      <div class="modal-body">
+        <input type="hidden" id="edit-prod-id" value="">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="prod-name">Product Name *</label>
+            <input type="text" id="prod-name" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="prod-sku">SKU Code *</label>
+            <input type="text" id="prod-sku" class="form-control" required>
+          </div>
+        </div>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="prod-category">Category</label>
+            <select id="prod-category" class="form-control">
+              <option value="Furniture">Furniture</option>
+              <option value="Components">Components</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="prod-vendor">Preferred Vendor</label>
+            <input type="text" id="prod-vendor" class="form-control" placeholder="Supplier name...">
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="prod-cost">Cost Price (₹) *</label>
+            <input type="number" id="prod-cost" class="form-control" step="0.01" min="0" required value="0.00">
+          </div>
+          <div class="form-group">
+            <label for="prod-sales">Sales Price (₹) *</label>
+            <input type="number" id="prod-sales" class="form-control" step="0.01" min="0" required value="0.00">
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="prod-strategy">Procurement Route</label>
+            <select id="prod-strategy" class="form-control">
+              <option value="MTS">Make To Stock (MTS)</option>
+              <option value="MTO">Make To Order (MTO)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="prod-type">Procurement Type</label>
+            <select id="prod-type" class="form-control">
+              <option value="Manufacturing">Manufacturing Replenish</option>
+              <option value="Purchase">Purchase Replenish</option>
+              <option value="None">None</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="prod-threshold">Reorder Threshold Limit *</label>
+            <input type="number" id="prod-threshold" class="form-control" min="0" required value="5">
+          </div>
+          <div class="form-group" id="group-onhand" style="display:none;">
+            <label style="opacity:0.6;">Current On-Hand Balance</label>
+            <input type="text" id="prod-onhand-display" class="form-control" disabled style="background-color:var(--bg-secondary);">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel-prod-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit-text">Catalog Product</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Search
+    const searchInput = document.getElementById("search-products-input");
+    searchInput.addEventListener("input", (e) => {
+      const query = e.target.value.toLowerCase();
+      document.querySelectorAll("#products-table-body tr").forEach(row => {
+        if (row.dataset.search.includes(query)) {
+          row.style.display = "";
+        } else {
+          row.style.display = "none";
+        }
+      });
+    });
+
+    {% if permissions.can_edit_products and not permissions.is_read_only %}
+      const modal = document.getElementById("product-modal");
+      const form = document.getElementById("product-modal-form");
+      const title = document.getElementById("modal-title-text");
+      const skuInput = document.getElementById("prod-sku");
+      const editId = document.getElementById("edit-prod-id");
+
+      const showModal = (editData = null) => {
+        if (editData) {
+          title.innerText = "Modify Product Specifications";
+          editId.value = editData.id;
+          document.getElementById("prod-name").value = editData.name;
+          skuInput.value = editData.sku;
+          skuInput.disabled = true;
+          document.getElementById("prod-category").value = editData.category;
+          document.getElementById("prod-vendor").value = editData.vendor;
+          document.getElementById("prod-cost").value = editData.cost;
+          document.getElementById("prod-sales").value = editData.sales;
+          document.getElementById("prod-strategy").value = editData.strategy;
+          document.getElementById("prod-type").value = editData.type;
+          document.getElementById("prod-threshold").value = editData.threshold;
+          document.getElementById("prod-onhand-display").value = editData.onhand;
+          document.getElementById("group-onhand").style.display = "block";
+          document.getElementById("btn-submit-text").innerText = "Save Changes";
+        } else {
+          title.innerText = "Catalog New Product";
+          editId.value = "";
+          form.reset();
+          skuInput.disabled = false;
+          document.getElementById("group-onhand").style.display = "none";
+          document.getElementById("btn-submit-text").innerText = "Catalog Product";
+        }
+        modal.style.display = "flex";
+      };
+
+      const hideModal = () => modal.style.display = "none";
+
+      document.getElementById("btn-open-create-prod-modal").addEventListener("click", () => showModal(null));
+      document.getElementById("close-prod-modal").addEventListener("click", hideModal);
+      document.getElementById("cancel-prod-modal").addEventListener("click", hideModal);
+
+      document.querySelectorAll(".edit-prod-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const d = e.target.dataset;
+          showModal({
+            id: d.id, name: d.name, sku: d.sku, category: d.category,
+            cost: d.cost, sales: d.sales, strategy: d.strategy,
+            type: d.type, vendor: d.vendor, threshold: d.threshold, onhand: d.onhand
+          });
+        });
+      });
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        
+        const payload = new FormData();
+        payload.append('name', document.getElementById("prod-name").value);
+        payload.append('sku', skuInput.value);
+        payload.append('category', document.getElementById("prod-category").value);
+        payload.append('costPrice', document.getElementById("prod-cost").value);
+        payload.append('salesPrice', document.getElementById("prod-sales").value);
+        payload.append('procureStrategy', document.getElementById("prod-strategy").value);
+        payload.append('procureType', document.getElementById("prod-type").value);
+        payload.append('vendor', document.getElementById("prod-vendor").value);
+        payload.append('reorderThreshold', document.getElementById("prod-threshold").value);
+
+        const url = editId.value ? `/products/edit/${editId.value}/` : '/products/create/';
+
+        fetch(url, { method: 'POST', body: payload })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              showToast(data.message, "success");
+              hideModal();
+              setTimeout(() => window.location.reload(), 1000);
+            } else {
+              showToast(data.message, "error");
+            }
+          });
+      });
+    {% endif %}
+  });
+</script>
+{% endblock %}

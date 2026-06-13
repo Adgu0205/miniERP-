@@ -1,0 +1,659 @@
+{% extends "base.html" %}
+{% load erp_filters %}
+
+{% block title %}Sales Pipeline{% endblock %}
+{% block heading %}Sales Order Pipelines{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="background-color: var(--bg-primary); border-radius: var(--border-radius-lg); border:1px solid var(--border-color); padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); display:flex; justify-content:space-between; align-items:center;">
+  <h3 class="panel-title">Sales Order Pipelines</h3>
+  <div>
+    {% if permissions.can_edit_sales and not permissions.is_read_only %}
+      <button class="btn btn-primary btn-sm" id="btn-open-create-so-modal">+ Create Sales Order</button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Kanban Workspace -->
+<div class="kanban-board-container">
+  <!-- Draft lane -->
+  <div class="kanban-column" data-status="draft">
+    <div class="kanban-column-header">
+      <span class="kanban-column-title">
+        <span class="badge badge-draft" style="border-radius:6px; font-size:11px; padding:3px 8px;">Draft Pipeline</span>
+      </span>
+      <span class="kanban-card-count">{{ kanban_orders.draft.count }}</span>
+    </div>
+    <div class="kanban-cards-wrapper">
+      {% for so in kanban_orders.draft %}
+        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}">
+          <div class="kanban-card-header">
+            <span class="kanban-card-id">{{ so.ref }}</span>
+            <span style="font-size:11px; color:var(--text-muted);">{{ so.date|date:"N j" }}</span>
+          </div>
+          <div class="kanban-card-title">{{ so.customer_name }}</div>
+          <div class="kanban-card-body">
+            {% for item in so.items.all %}
+              <div style="display:flex; justify-content:space-between; margin-top:2px;">
+                <span>{{ item.product.name }}</span>
+                <strong>x{{ item.quantity }}</strong>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="kanban-card-footer">
+            <span class="kanban-card-price">₹{{ so.total_amount|floatformat:2 }}</span>
+            <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:var(--text-muted);">DRAFT</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Confirmed lane -->
+  <div class="kanban-column" data-status="confirmed">
+    <div class="kanban-column-header">
+      <span class="kanban-column-title">
+        <span class="badge badge-confirmed" style="border-radius:6px; font-size:11px; padding:3px 8px;">Confirmed / Reserved</span>
+      </span>
+      <span class="kanban-card-count">{{ kanban_orders.confirmed.count }}</span>
+    </div>
+    <div class="kanban-cards-wrapper">
+      {% for so in kanban_orders.confirmed %}
+        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}">
+          <div class="kanban-card-header">
+            <span class="kanban-card-id">{{ so.ref }}</span>
+            <span style="font-size:11px; color:var(--text-muted);">{{ so.date|date:"N j" }}</span>
+          </div>
+          <div class="kanban-card-title">{{ so.customer_name }}</div>
+          <div class="kanban-card-body">
+            {% for item in so.items.all %}
+              <div style="display:flex; justify-content:space-between; margin-top:2px;">
+                <span>{{ item.product.name }}</span>
+                <strong>x{{ item.quantity }}</strong>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="kanban-card-footer">
+            <span class="kanban-card-price">₹{{ so.total_amount|floatformat:2 }}</span>
+            <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:var(--text-muted);">CONFIRMED</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Partially Delivered lane -->
+  <div class="kanban-column" data-status="partially_delivered">
+    <div class="kanban-column-header">
+      <span class="kanban-column-title">
+        <span class="badge badge-partial" style="border-radius:6px; font-size:11px; padding:3px 8px;">Partially Shipped</span>
+      </span>
+      <span class="kanban-card-count">{{ kanban_orders.partially_delivered.count }}</span>
+    </div>
+    <div class="kanban-cards-wrapper">
+      {% for so in kanban_orders.partially_delivered %}
+        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}">
+          <div class="kanban-card-header">
+            <span class="kanban-card-id">{{ so.ref }}</span>
+            <span style="font-size:11px; color:var(--text-muted);">{{ so.date|date:"N j" }}</span>
+          </div>
+          <div class="kanban-card-title">{{ so.customer_name }}</div>
+          <div class="kanban-card-body">
+            {% for item in so.items.all %}
+              <div style="display:flex; justify-content:space-between; margin-top:2px;">
+                <span>{{ item.product.name }}</span>
+                <strong>x{{ item.quantity }}</strong>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="kanban-card-footer">
+            <span class="kanban-card-price">₹{{ so.total_amount|floatformat:2 }}</span>
+            <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:var(--text-muted);">PARTIAL</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Fully Delivered lane -->
+  <div class="kanban-column" data-status="fully_delivered">
+    <div class="kanban-column-header">
+      <span class="kanban-column-title">
+        <span class="badge badge-completed" style="border-radius:6px; font-size:11px; padding:3px 8px;">Fully Shipped</span>
+      </span>
+      <span class="kanban-card-count">{{ kanban_orders.fully_delivered.count }}</span>
+    </div>
+    <div class="kanban-cards-wrapper">
+      {% for so in kanban_orders.fully_delivered %}
+        <div class="kanban-card sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}">
+          <div class="kanban-card-header">
+            <span class="kanban-card-id">{{ so.ref }}</span>
+            <span style="font-size:11px; color:var(--text-muted);">{{ so.date|date:"N j" }}</span>
+          </div>
+          <div class="kanban-card-title">{{ so.customer_name }}</div>
+          <div class="kanban-card-body">
+            {% for item in so.items.all %}
+              <div style="display:flex; justify-content:space-between; margin-top:2px;">
+                <span>{{ item.product.name }}</span>
+                <strong>x{{ item.quantity }}</strong>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="kanban-card-footer">
+            <span class="kanban-card-price">₹{{ so.total_amount|floatformat:2 }}</span>
+            <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:var(--text-muted);">SHIPPED</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Sales Order detail Drawer overlay -->
+<div class="drawer-overlay" id="so-drawer" style="display:none;">
+  <div class="drawer-content" style="width: 500px;">
+    <div class="drawer-header">
+      <div>
+        <h2 class="drawer-title" style="display:flex; align-items:center; gap:8px;">
+          <span id="drawer-so-ref">SO-000</span>
+          <span class="badge" id="drawer-so-status-badge">draft</span>
+        </h2>
+        <span style="font-size:12px; color:var(--text-muted);" id="drawer-so-date">Date</span>
+      </div>
+      <button class="modal-close" id="close-so-drawer">✕</button>
+    </div>
+
+    <div class="drawer-body">
+      <div style="margin-bottom: 24px;">
+        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:4px;">Customer Details</h4>
+        <div style="font-size:16px; font-weight:700;" id="drawer-so-customer">Customer</div>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px;">Order Lines</h4>
+        <div class="lines-list" style="margin-top:0;">
+          <div class="line-header" style="grid-template-columns: 2fr 1fr 1fr; border:none;">
+            <span>Product</span>
+            <span style="text-align:center;">Qty Ordered</span>
+            <span style="text-align:center;">Qty Shipped</span>
+          </div>
+          <div id="drawer-so-lines-container">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:16px; padding:0 8px;">
+          <span style="font-weight:600;">Total Amount:</span>
+          <span style="font-weight:700; font-size:18px; color:var(--text-primary);" id="drawer-so-total">₹0.00</span>
+        </div>
+      </div>
+
+      <!-- Procurement Trace -->
+      <div id="drawer-so-trace-container" style="margin-bottom:24px; display:none;">
+        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px;">Replenishment Routes</h4>
+        <div class="procurement-chain" id="drawer-so-trace-chain">
+          <!-- Flow visualizer -->
+        </div>
+      </div>
+
+      <div style="margin-top: 32px; display:flex; flex-direction:column; gap:12px;" id="drawer-actions-container">
+        <!-- Buttons rendered dynamically -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sales Order Creation form overlay -->
+<div class="modal-overlay" id="so-create-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 720px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Create Sales Order</h3>
+      <button class="modal-close" id="close-so-modal">✕</button>
+    </div>
+    <form id="so-create-form">
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="so-customer">Customer Name *</label>
+          <input type="text" id="so-customer" class="form-control" required placeholder="Enter customer company name...">
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="so-expected-date">Expected Delivery Date</label>
+          <input type="date" id="so-expected-date" class="form-control">
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="so-notes">Order Notes</label>
+          <textarea id="so-notes" class="form-control" rows="2" placeholder="Internal notes, delivery instructions..."></textarea>
+        </div>
+
+        <div style="margin-top:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary);">Order Lines</h4>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-so-line">+ Add Line</button>
+          </div>
+          
+          <div class="lines-list">
+            <div class="line-header">
+              <span>Product</span>
+              <span style="text-align:right;">Quantity</span>
+              <span style="text-align:right;">Unit Price</span>
+              <span></span>
+            </div>
+            <div id="so-lines-container">
+              <!-- Dynamically added -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel-so-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Draft</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Shortage Warning Dialog Form overlay -->
+<div class="modal-overlay" id="shortage-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Inventory Shortage Warnings</h3>
+      <button class="modal-close" id="close-shortage-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-box warning">
+        <div>⚠️</div>
+        <div>
+          <strong id="shortage-so-ref">SO-000</strong> requires items currently not available in stock. The system has analyzed the shortages and computed replenishment routing rules.
+        </div>
+      </div>
+
+      <h4 style="font-size:13px; font-weight:700; margin-bottom:12px;">Shortage & Procurement Routing Advice:</h4>
+      <div style="display:flex; flex-direction:column; gap:16px;" id="shortage-rec-container">
+        <!-- Generated recommendations -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="btn-cancel-shortage">Review Order</button>
+      <button class="btn btn-primary" id="btn-trigger-proc-confirm">Auto-replenish (Execute Routing)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delivery Validation Dialog Form overlay -->
+<div class="modal-overlay" id="delivery-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Shipment Delivery Validation</h3>
+      <button class="modal-close" id="close-delivery-modal">✕</button>
+    </div>
+    <form id="delivery-validation-form">
+      <input type="hidden" id="delivery-so-id" value="">
+      <div class="modal-body">
+        <div style="margin-bottom:16px; font-size:13px; color:var(--text-secondary);">
+          Verify and input the quantities of products shipped for delivery validation.
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;" id="delivery-items-container">
+          <!-- Rendered in JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel-delivery-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Validate Delivery</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Trace and orders payload maps -->
+<script>
+  const traces = {{ traces_json|safe }};
+  const activeRole = "{{ role }}";
+  const canEditSales = {% if permissions.can_edit_sales %}true{% else %}false{% endif %};
+  const isReadOnly = {% if permissions.is_read_only %}true{% else %}false{% endif %};
+
+  // Products lookup dictionary
+  const dbProducts = [
+    {% for p in products %}
+    { id: "{{ p.id }}", name: "{{ p.name|escapejs }}", sku: "{{ p.sku }}", price: {{ p.sales_price }}, onhand: {{ p.on_hand }} },
+    {% endfor %}
+  ];
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const drawer = document.getElementById("so-drawer");
+    
+    // Open drawer
+    document.querySelectorAll(".sales-so-card").forEach(card => {
+      card.addEventListener("click", () => {
+        const id = card.dataset.id;
+        const customer = card.dataset.customer;
+        const status = card.dataset.status;
+        const total = parseFloat(card.dataset.total);
+        const date = new Date(card.dataset.date).toLocaleString();
+
+        document.getElementById("drawer-so-ref").innerText = `SO-${String(id).padStart(3, '0')}`;
+        document.getElementById("drawer-so-date").innerText = date;
+        document.getElementById("drawer-so-customer").innerText = customer;
+        document.getElementById("drawer-so-total").innerText = `₹` + total.toFixed(2);
+        
+        // Render Badge
+        const badge = document.getElementById("drawer-so-status-badge");
+        badge.className = `badge badge-${status === 'fully_delivered' ? 'completed' : status === 'confirmed' ? 'confirmed' : 'draft'}`;
+        badge.innerText = status.replace('_', ' ');
+
+        // Render Lines
+        const linesContainer = document.getElementById("drawer-so-lines-container");
+        linesContainer.innerHTML = '';
+        
+        // Pull items directly from DOM card structure
+        const itemsList = [];
+        card.querySelectorAll(".kanban-card-body div").forEach(div => {
+          const name = div.querySelector("span").innerText;
+          const qty = parseInt(div.querySelector("strong").innerText.replace('x', ''));
+          itemsList.push({ name, qty });
+        });
+
+        linesContainer.innerHTML = itemsList.map(item => `
+          <div class="line-item-row" style="grid-template-columns: 2fr 1fr 1fr;">
+            <span style="font-weight:600;">${item.name}</span>
+            <span style="text-align:center; font-weight:600;">${item.qty}</span>
+            <span style="text-align:center; color:var(--accent-hover); font-weight:700;">
+              ${status === 'fully_delivered' ? item.qty : 0}
+            </span>
+          </div>
+        `).join('');
+
+        // Visual Trace route
+        const traceContainer = document.getElementById("drawer-so-trace-container");
+        const trace = traces[id];
+        if (trace && trace.has_chain) {
+          const traceChain = document.getElementById("drawer-so-trace-chain");
+          traceChain.innerHTML = `
+            <div class="chain-step active">
+              <span class="chain-step-title">SO-${String(id).padStart(3, '0')}</span>
+              <span class="chain-step-sub">Sales Order</span>
+            </div>
+            ${trace.mos.map(mo => `
+              <div class="chain-arrow">➔</div>
+              <div class="chain-step ${mo.status === 'completed' ? 'active' : ''}">
+                <span class="chain-step-title">${mo.id}</span>
+                <span class="chain-step-sub">${mo.status}</span>
+              </div>
+            `).join('')}
+            ${trace.pos.map(po => `
+              <div class="chain-arrow">➔</div>
+              <div class="chain-step ${po.status === 'fully_received' ? 'active' : ''}">
+                <span class="chain-step-title">${po.id}</span>
+                <span class="chain-step-sub">${po.status}</span>
+              </div>
+            `).join('')}
+          `;
+          traceContainer.style.display = "block";
+        } else {
+          traceContainer.style.display = "none";
+        }
+
+        // Render actions
+        const actionsContainer = document.getElementById("drawer-actions-container");
+        actionsContainer.innerHTML = '';
+        if (canEditSales && !isReadOnly) {
+          if (status === 'draft') {
+            actionsContainer.innerHTML = `
+              <button class="btn btn-primary" id="btn-drawer-confirm" style="width:100%;">Confirm Sales Order</button>
+              <button class="btn btn-secondary" id="btn-drawer-cancel-so" style="width:100%; color:#ef4444; border-color:#ef4444;">Cancel Order</button>
+            `;
+          } else if (['confirmed', 'partially_delivered'].includes(status)) {
+            actionsContainer.innerHTML = `
+              <button class="btn btn-primary" id="btn-drawer-deliver" style="width:100%;">Deliver Products</button>
+              ${status === 'confirmed' ? '<button class="btn btn-secondary" id="btn-drawer-cancel-so" style="width:100%; color:#ef4444; border-color:#ef4444;">Cancel Order</button>' : ''}
+            `;
+          }
+        }
+
+        drawer.style.display = "flex";
+
+        // Action triggers
+        if (canEditSales && !isReadOnly) {
+          const confirmBtn = document.getElementById("btn-drawer-confirm");
+          if (confirmBtn) {
+            confirmBtn.addEventListener("click", () => {
+              drawer.style.display = "none";
+              confirmSalesOrderAJAX(id);
+            });
+          }
+
+          const deliverBtn = document.getElementById("btn-drawer-deliver");
+          if (deliverBtn) {
+            deliverBtn.addEventListener("click", () => {
+              drawer.style.display = "none";
+              openDeliveryValidationModal(id, itemsList);
+            });
+          }
+
+          // Cancel SO handler
+          const cancelSOBtn = document.getElementById("btn-drawer-cancel-so");
+          if (cancelSOBtn) {
+            cancelSOBtn.addEventListener("click", () => {
+              if (!confirm(`Are you sure you want to cancel SO-${String(id).padStart(3,'0')}? This will release all reserved stock.`)) return;
+              drawer.style.display = "none";
+              fetch(`/sales/${id}/cancel/`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                  if (data.status === 'success') {
+                    showToast(data.message, "success");
+                    setTimeout(() => window.location.reload(), 1200);
+                  } else {
+                    showToast(data.message, "error");
+                  }
+                });
+            });
+          }
+        }
+      });
+    });
+
+    const closeDrawer = () => drawer.style.display = "none";
+    document.getElementById("close-so-drawer").addEventListener("click", closeDrawer);
+    drawer.addEventListener("click", (e) => {
+      if (e.target === drawer) closeDrawer();
+    });
+
+    // Create SO Modal
+    if (canEditSales && !isReadOnly) {
+      const soModal = document.getElementById("so-create-modal");
+      const linesContainer = document.getElementById("so-lines-container");
+
+      const addLine = () => {
+        const row = document.createElement("div");
+        row.className = "line-item-row";
+        row.innerHTML = `
+          <select class="form-control line-product-select" required>
+            <option value="" disabled selected>Select product...</option>
+            ${dbProducts.map(p => `<option value="${p.id}" data-price="${p.price}">${p.name} (${p.sku})</option>`).join('')}
+          </select>
+          <input type="number" class="form-control line-qty-input" required min="1" value="1" style="text-align:right;">
+          <input type="number" class="form-control line-price-input" required min="0" step="0.01" value="0.00" style="text-align:right;">
+          <button type="button" class="line-remove-btn">✕</button>
+        `;
+        linesContainer.appendChild(row);
+
+        row.querySelector(".line-product-select").addEventListener("change", (e) => {
+          const opt = e.target.options[e.target.selectedIndex];
+          row.querySelector(".line-price-input").value = parseFloat(opt.dataset.price).toFixed(2);
+        });
+
+        row.querySelector(".line-remove-btn").addEventListener("click", () => linesContainer.removeChild(row));
+      };
+
+      document.getElementById("btn-open-create-so-modal").addEventListener("click", () => {
+        linesContainer.innerHTML = '';
+        addLine();
+        soModal.style.display = "flex";
+      });
+
+      document.getElementById("btn-add-so-line").addEventListener("click", addLine);
+      
+      const hideSoModal = () => soModal.style.display = "none";
+      document.getElementById("close-so-modal").addEventListener("click", hideSoModal);
+      document.getElementById("cancel-so-modal").addEventListener("click", hideSoModal);
+
+      document.getElementById("so-create-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const items = [];
+        
+        document.querySelectorAll("#so-lines-container .line-item-row").forEach(row => {
+          const sel = row.querySelector(".line-product-select");
+          const qty = parseInt(row.querySelector(".line-qty-input").value) || 0;
+          const pr = parseFloat(row.querySelector(".line-price-input").value) || 0;
+          if (sel.value && qty > 0) {
+            items.push({ productId: sel.value, quantity: qty, unitPrice: pr });
+          }
+        });
+
+        const fd = new FormData();
+        fd.append('customerName', document.getElementById("so-customer").value);
+        fd.append('items', JSON.stringify(items));
+        fd.append('notes', document.getElementById("so-notes").value || '');
+        fd.append('expectedDeliveryDate', document.getElementById("so-expected-date").value || '');
+
+        fetch('/sales/create/', { method: 'POST', body: fd })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              showToast(data.message, "success");
+              hideSoModal();
+              setTimeout(() => window.location.reload(), 1000);
+            } else {
+              showToast(data.message, "error");
+            }
+          });
+      });
+    }
+
+    // Direct check query params to load modal immediately
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('trigger') === 'create' && canEditSales && !isReadOnly) {
+      document.getElementById("btn-open-create-so-modal").click();
+    }
+  });
+
+  // AJAX Confirm flow
+  function confirmSalesOrderAJAX(soId, triggerProc = false) {
+    const fd = new FormData();
+    if (triggerProc) {
+      fd.append('trigger_procurement', 'true');
+    } else {
+      fd.append('dry_run', 'true');
+    }
+
+    fetch(`/sales/${soId}/confirm/`, { method: 'POST', body: fd })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'shortage') {
+          // Open shortage modal
+          openShortageModal(soId, data.shortages);
+        } else if (data.status === 'success') {
+          showToast(data.message, "success");
+          setTimeout(() => window.location.reload(), 1200);
+        }
+      });
+  }
+
+  // Shortage modal rendering
+  function openShortageModal(soId, shortages) {
+    document.getElementById("shortage-so-ref").innerText = `SO-${String(soId).padStart(3, '0')}`;
+    const container = document.getElementById("shortage-rec-container");
+    
+    container.innerHTML = shortages.map(s => `
+      <div style="border:1px solid var(--border-color); padding:16px; border-radius:var(--border-radius-md); background-color:var(--bg-secondary);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <strong style="font-size:14px;">${s.productName}</strong>
+          <span class="badge badge-mto">Short by ${s.shortage} units</span>
+        </div>
+        <div class="rec-box" style="margin:4px 0 0 0; padding:10px 14px;">
+          <div class="rec-title">
+            <span>✦ Recommendation:</span> ${s.recommendation}
+          </div>
+          <div class="rec-reason" style="font-size:12px; margin-top:4px;">
+            ${s.reason}
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    const modal = document.getElementById("shortage-modal");
+    modal.style.display = "flex";
+
+    const hide = () => modal.style.display = "none";
+    document.getElementById("close-shortage-modal").onclick = hide;
+    document.getElementById("btn-cancel-shortage").onclick = hide;
+
+    document.getElementById("btn-trigger-proc-confirm").onclick = () => {
+      hide();
+      confirmSalesOrderAJAX(soId, true);
+    };
+  }
+
+  // Delivery Modal validation
+  function openDeliveryValidationModal(soId, itemsList) {
+    document.getElementById("delivery-so-id").value = soId;
+    const container = document.getElementById("delivery-items-container");
+
+    container.innerHTML = itemsList.map(item => {
+      const prod = dbProducts.find(p => p.name === item.name);
+      const prodId = prod ? prod.id : "";
+      const currentStock = prod ? prod.onhand : 0;
+      const maxShip = Math.min(item.qty, currentStock);
+
+      return `
+        <div style="border:1px solid var(--border-color); padding:12px; border-radius:var(--border-radius-md); background-color:var(--bg-secondary);">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span style="font-weight:700;">${item.name}</span>
+            <span style="font-size:12px; color:var(--text-secondary);">Ordered: ${item.qty}</span>
+          </div>
+          <div class="form-grid" style="grid-template-columns: 2fr 1fr; margin-bottom:0; align-items:center;">
+            <div style="font-size:12px; color:var(--text-secondary);">
+              On Hand Stock: <strong style="color:var(--text-primary);">${currentStock}</strong>
+            </div>
+            <div class="form-group" style="gap:2px;">
+              <label style="font-size:10px;">Ship Quantity</label>
+              <input type="number" class="form-control delivery-qty-input" data-prod-id="${prodId}" min="0" max="${maxShip}" value="${maxShip}" style="padding:6px; font-weight:700; text-align:center;">
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const modal = document.getElementById("delivery-modal");
+    modal.style.display = "flex";
+
+    const hide = () => modal.style.display = "none";
+    document.getElementById("close-delivery-modal").onclick = hide;
+    document.getElementById("cancel-delivery-modal").onclick = hide;
+
+    document.getElementById("delivery-validation-form").onsubmit = (e) => {
+      e.preventDefault();
+      
+      const deliveries = {};
+      modal.querySelectorAll(".delivery-qty-input").forEach(input => {
+        deliveries[input.dataset.prodId] = parseInt(input.value) || 0;
+      });
+
+      const fd = new FormData();
+      fd.append('deliveries', JSON.stringify(deliveries));
+
+      fetch(`/sales/${soId}/deliver/`, { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            showToast(data.message, "success");
+            hide();
+            setTimeout(() => window.location.reload(), 1200);
+          } else {
+            showToast(data.message, "error");
+          }
+        });
+    };
+  }
+</script>
+{% endblock %}

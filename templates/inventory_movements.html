@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Movements{% endblock %}
+{% block heading %}Inventory Movement Center{% endblock %}
+
+{% block content %}
+<!-- Summary Bar -->
+<div style="background-color:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--border-radius-lg); padding:16px 24px; margin-bottom:24px; display:flex; justify-content:space-between; align-items:center; box-shadow:var(--shadow-sm);">
+  <div>
+    <h3 style="font-size:15px; font-weight:700; margin:0;">Inventory Movement History</h3>
+    <span style="font-size:12px; color:var(--text-muted);">{{ total_count }} movement records found</span>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <a href="{% url 'stock_ledger' %}" class="btn btn-secondary btn-sm">View Stock Ledger</a>
+    <a href="{% url 'export_movements_csv' %}?product={{ selected_product }}&movement_type={{ selected_type }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-secondary btn-sm">⬇ Export CSV</a>
+  </div>
+</div>
+
+<!-- Filter Panel -->
+<div class="card-panel" style="margin-bottom:24px;">
+  <form method="GET" action="{% url 'inventory_movements' %}" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
+    <div class="form-group" style="flex:1; min-width:180px;">
+      <label style="font-size:11px; text-transform:uppercase; color:var(--text-secondary);">Product</label>
+      <select name="product" class="form-control" style="padding:7px 10px; font-size:13px;">
+        <option value="">All Products</option>
+        {% for p in products %}
+          <option value="{{ p.id }}" {% if selected_product == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }} ({{ p.sku }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="flex:1; min-width:180px;">
+      <label style="font-size:11px; text-transform:uppercase; color:var(--text-secondary);">Movement Type</label>
+      <select name="movement_type" class="form-control" style="padding:7px 10px; font-size:13px;">
+        <option value="">All Types</option>
+        {% for code, label in movement_types %}
+          <option value="{{ code }}" {% if selected_type == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="flex:1; min-width:140px;">
+      <label style="font-size:11px; text-transform:uppercase; color:var(--text-secondary);">From Date</label>
+      <input type="date" name="date_from" class="form-control" value="{{ date_from }}" style="padding:7px 10px; font-size:13px;">
+    </div>
+    <div class="form-group" style="flex:1; min-width:140px;">
+      <label style="font-size:11px; text-transform:uppercase; color:var(--text-secondary);">To Date</label>
+      <input type="date" name="date_to" class="form-control" value="{{ date_to }}" style="padding:7px 10px; font-size:13px;">
+    </div>
+    <div class="form-group" style="flex:2; min-width:200px;">
+      <label style="font-size:11px; text-transform:uppercase; color:var(--text-secondary);">Search</label>
+      <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Search source doc, product..." style="padding:7px 10px; font-size:13px;">
+    </div>
+    <div style="display:flex; gap:8px; padding-bottom:1px;">
+      <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+      <a href="{% url 'inventory_movements' %}" class="btn btn-secondary btn-sm">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- Movements Table -->
+<div class="card-panel">
+  <div class="table-responsive">
+    <table class="erp-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Product</th>
+          <th>SKU</th>
+          <th>Movement Type</th>
+          <th style="text-align:center;">Qty Change</th>
+          <th>Source Document</th>
+          <th>Operator</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in movements %}
+          <tr>
+            <td style="color:var(--text-muted); font-size:12px; white-space:nowrap;">{{ entry.timestamp|date:"Y-m-d H:i" }}</td>
+            <td style="font-weight:600;">{{ entry.product.name }}</td>
+            <td style="font-size:12px; color:var(--text-secondary); font-weight:700;">{{ entry.product.sku }}</td>
+            <td>
+              <span class="badge" style="
+                border-radius:4px; font-size:11px;
+                {% if entry.movement_type == 'Sales Delivery' %}background-color:#fee2e2; color:#b91c1c;
+                {% elif entry.movement_type == 'Purchase Receipt' %}background-color:#dcfce7; color:#15803d;
+                {% elif entry.movement_type == 'Manufacturing Consumption' %}background-color:#fef3c7; color:#b45309;
+                {% elif entry.movement_type == 'Manufacturing Production' %}background-color:#dbeafe; color:#1d4ed8;
+                {% else %}background-color:var(--bg-tertiary); color:var(--text-primary);
+                {% endif %}
+              ">{{ entry.movement_type }}</span>
+            </td>
+            <td style="text-align:center;">
+              {% if entry.quantity_change < 0 %}
+                <span style="font-weight:700; color:#ef4444; background-color:#fee2e2; padding:3px 10px; border-radius:12px; font-size:13px; display:inline-block; min-width:50px;">
+                  {{ entry.quantity_change }}
+                </span>
+              {% else %}
+                <span style="font-weight:700; color:var(--accent-hover); background-color:var(--accent-light); padding:3px 10px; border-radius:12px; font-size:13px; display:inline-block; min-width:50px;">
+                  +{{ entry.quantity_change }}
+                </span>
+              {% endif %}
+            </td>
+            <td style="font-size:13px; color:var(--text-secondary); font-weight:600;">{{ entry.source_document }}</td>
+            <td style="font-size:13px; font-weight:500;">{{ entry.user }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" style="text-align:center; color:var(--text-muted); padding:32px 0;">No inventory movements found matching your filters.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:16px; border-top:1px solid var(--border-color);">
+      <span style="font-size:13px; color:var(--text-muted);">
+        Page {{ page_obj.number }} of {{ paginator.num_pages }} — {{ total_count }} total records
+      </span>
+      <div style="display:flex; gap:8px;">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}&product={{ selected_product }}&movement_type={{ selected_type }}&date_from={{ date_from }}&date_to={{ date_to }}&search={{ search }}" class="btn btn-secondary btn-sm">← Prev</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}&product={{ selected_product }}&movement_type={{ selected_type }}&date_from={{ date_from }}&date_to={{ date_to }}&search={{ search }}" class="btn btn-secondary btn-sm">Next →</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

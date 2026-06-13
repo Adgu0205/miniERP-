@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+{% load erp_filters %}
+
+{% block title %}Purchase Orders{% endblock %}
+{% block heading %}Purchase Orders & RFQs{% endblock %}
+
+{% block content %}
+<div class="purchase-panel card-panel">
+  <div class="panel-header">
+    <h3 class="panel-title">Purchase Orders & RFQs</h3>
+    <div style="display:flex; gap:12px;">
+      {% if permissions.can_edit_purchases and not permissions.is_read_only %}
+        <button class="btn btn-primary btn-sm" id="btn-open-create-po-modal">+ Create RFQ</button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="erp-table">
+      <thead>
+        <tr>
+          <th>Order Ref</th>
+          <th>Date</th>
+          <th>Vendor Name</th>
+          <th style="text-align:right;">Total Cost</th>
+          <th style="text-align:center;">Items count</th>
+          <th>Source Document</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for po in purchase_orders %}
+          <tr>
+            <td style="font-weight:700;">{{ po.ref }}</td>
+            <td style="color:var(--text-muted); font-size:13px;">{{ po.date|date:"Y-m-d" }}</td>
+            <td style="font-weight:600;">{{ po.vendor_name }}</td>
+            <td style="text-align:right; font-weight:700;">₹{{ po.total_amount|floatformat:2 }}</td>
+            <td style="text-align:center;">{{ po.items.count }}</td>
+            <td style="font-size:12px; color:var(--text-secondary); font-weight:600;">{{ po.source_document|default:"-" }}</td>
+            <td>
+              <span class="badge badge-{% if po.status == 'fully_received' %}received{% elif po.status == 'confirmed' %}confirmed{% elif po.status == 'partially_received' %}partial{% else %}draft{% endif %}">
+                {{ po.status|replace_underscore }}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-secondary btn-sm view-po-details-btn" 
+                      data-id="{{ po.id }}"
+                      data-ref="{{ po.ref }}"
+                      data-vendor="{{ po.vendor_name }}"
+                      data-total="{{ po.total_amount }}"
+                      data-status="{{ po.status }}"
+                      data-date="{{ po.date }}"
+                      data-source="{{ po.source_document|default:'-' }}"
+                      style="padding:4px 8px; font-size:11px;">View</button>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" style="text-align:center; color:var(--text-muted);">No purchases logged.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Details Drawer Overlay -->
+<div class="drawer-overlay" id="po-drawer" style="display:none;">
+  <div class="drawer-content" style="width: 500px;">
+    <div class="drawer-header">
+      <div>
+        <h2 class="drawer-title" style="display:flex; align-items:center; gap:8px;">
+          <span id="drawer-po-ref">PO-000</span>
+          <span class="badge" id="drawer-po-status-badge">draft</span>
+        </h2>
+        <span style="font-size:12px; color:var(--text-muted);" id="drawer-po-date">Date</span>
+      </div>
+      <button class="modal-close" id="close-po-drawer">✕</button>
+    </div>
+
+    <div class="drawer-body">
+      <div style="margin-bottom: 24px;">
+        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:4px;">Vendor Details</h4>
+        <div style="font-size:16px; font-weight:700;" id="drawer-po-vendor">Vendor</div>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px;">Purchase Items</h4>
+        <div class="lines-list" style="margin-top:0;">
+          <div class="line-header" style="grid-template-columns: 2fr 1fr 1fr; border:none;">
+            <span>Product</span>
+            <span style="text-align:center;">Qty Ordered</span>
+            <span style="text-align:center;">Qty Received</span>
+          </div>
+          <div id="drawer-po-lines-container">
+            <!-- Rendered in JS -->
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:16px; padding:0 8px;">
+          <span style="font-weight:600;">Total Purchase Amount:</span>
+          <span style="font-weight:700; font-size:18px; color:var(--text-primary);" id="drawer-po-total">₹0.00</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:4px;">Source Reference</h4>
+        <div style="font-size:14px; font-weight:600; color:var(--text-primary);" id="drawer-po-source">-</div>
+      </div>
+
+      <div style="margin-top: 32px; display:flex; flex-direction:column; gap:12px;" id="drawer-actions-container">
+        <!-- Rendered in JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Creation Modal Form -->
+<div class="modal-overlay" id="po-create-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 720px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Create Purchase Order RFQ</h3>
+      <button class="modal-close" id="close-po-modal">✕</button>
+    </div>
+    <form id="po-create-form">
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="po-vendor">Vendor Name *</label>
+          <input type="text" id="po-vendor" class="form-control" required placeholder="Enter supplier name (e.g. Timber Supplier Co)...">
+        </div>
+
+        <div style="margin-top:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary);">Request Lines</h4>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-po-line">+ Add Line</button>
+          </div>
+          
+          <div class="lines-list">
+            <div class="line-header">
+              <span>Material Product</span>
+              <span style="text-align:right;">Quantity</span>
+              <span style="text-align:right;">Unit Cost</span>
+              <span></span>
+            </div>
+            <div id="po-lines-container">
+              <!-- Lines render dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel-po-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save RFQ Draft</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Receipt Validation Modal Overlay -->
+<div class="modal-overlay" id="receipt-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Material Receipt Validation</h3>
+      <button class="modal-close" id="close-rec-modal">✕</button>
+    </div>
+    <form id="receipt-validation-form">
+      <input type="hidden" id="receipt-po-id" value="">
+      <div class="modal-body">
+        <div style="margin-bottom:16px; font-size:13px; color:var(--text-secondary);">
+          Verify and input the quantities of materials received into physical inventory.
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;" id="receipt-items-container">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel-rec-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Validate Receipt</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Lookup data seeds
+  const dbProducts = [
+    {% for p in products %}
+    { id: "{{ p.id }}", name: "{{ p.name|escapejs }}", sku: "{{ p.sku }}", cost: {{ p.cost_price }} },
+    {% endfor %}
+  ];
+
+  const canEditPurchases = {% if permissions.can_edit_purchases %}true{% else %}false{% endif %};
+  const isReadOnly = {% if permissions.is_read_only %}true{% else %}false{% endif %};
+
+  // Pre-seed current lines per PO so JS can access without network lookup
+  const poLinesSeed = {
+    {% for po in purchase_orders %}
+    "{{ po.id }}": [
+      {% for item in po.items.all %}
+      { id: "{{ item.product.id }}", name: "{{ item.product.name|escapejs }}", quantity: {{ item.quantity }}, received: {{ item.received_quantity }} },
+      {% endfor %}
+    ],
+    {% endfor %}
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const drawer = document.getElementById("po-drawer");
+
+    // Click PO card view
+    document.querySelectorAll(".view-po-details-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        const ref = btn.dataset.ref;
+        const vendor = btn.dataset.vendor;
+        const total = parseFloat(btn.dataset.total);
+        const status = btn.dataset.status;
+        const date = new Date(btn.dataset.date).toLocaleString();
+        const source = btn.dataset.source;
+
+        document.getElementById("drawer-po-ref").innerText = ref;
+        document.getElementById("drawer-po-date").innerText = date;
+        document.getElementById("drawer-po-vendor").innerText = vendor;
+        document.getElementById("drawer-po-total").innerText = `₹` + total.toFixed(2);
+        document.getElementById("drawer-po-source").innerText = source;
+
+        const badge = document.getElementById("drawer-po-status-badge");
+        badge.className = `badge badge-${status === 'fully_received' ? 'received' : status === 'confirmed' ? 'confirmed' : 'draft'}`;
+        badge.innerText = status.replace('_', ' ');
+
+        // Lines list
+        const linesContainer = document.getElementById("drawer-po-lines-container");
+        const lines = poLinesSeed[id] || [];
+        linesContainer.innerHTML = lines.map(item => `
+          <div class="line-item-row" style="grid-template-columns: 2fr 1fr 1fr;">
+            <span style="font-weight:600;">${item.name}</span>
+            <td style="text-align:center; font-weight:600;">${item.quantity}</td>
+            <td style="text-align:center; color:var(--accent-hover); font-weight:700;">${item.received}</td>
+          </div>
+        `).join('');
+
+        // Actions
+        const actionsContainer = document.getElementById("drawer-actions-container");
+        actionsContainer.innerHTML = '';
+        if (canEditPurchases && !isReadOnly) {
+          if (status === 'draft') {
+            actionsContainer.innerHTML = `
+              <button class="btn btn-primary" id="btn-drawer-confirm-po" style="width:100%;">Confirm Purchase Order</button>
+              <button class="btn btn-secondary" id="btn-drawer-cancel-po" style="width:100%; color:#ef4444; border-color:#ef4444;">Cancel RFQ</button>
+            `;
+          } else if (['confirmed', 'partially_received'].includes(status)) {
+            actionsContainer.innerHTML = `
+              <button class="btn btn-primary" id="btn-drawer-receive-po" style="width:100%;">Receive Products</button>
+              ${status === 'confirmed' ? '<button class="btn btn-secondary" id="btn-drawer-cancel-po" style="width:100%; color:#ef4444; border-color:#ef4444;">Cancel PO</button>' : ''}
+            `;
+          }
+        }
+
+        drawer.style.display = "flex";
+
+        // Action events
+        if (canEditPurchases && !isReadOnly) {
+          const confirmBtn = document.getElementById("btn-drawer-confirm-po");
+          if (confirmBtn) {
+            confirmBtn.addEventListener("click", () => {
+              drawer.style.display = "none";
+              fetch(`/purchases/${id}/confirm/`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                  showToast("Purchase Order confirmed!", "success");
+                  setTimeout(() => window.location.reload(), 1000);
+                });
+            });
+          }
+
+          const receiveBtn = document.getElementById("btn-drawer-receive-po");
+          if (receiveBtn) {
+            receiveBtn.addEventListener("click", () => {
+              drawer.style.display = "none";
+              openReceiptValidationModal(id, lines);
+            });
+          }
+
+          // Cancel PO handler
+          const cancelPOBtn = document.getElementById("btn-drawer-cancel-po");
+          if (cancelPOBtn) {
+            cancelPOBtn.addEventListener("click", () => {
+              if (!confirm(`Cancel ${ref}? This action cannot be undone.`)) return;
+              drawer.style.display = "none";
+              fetch(`/purchases/${id}/cancel/`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                  if (data.status === 'success') {
+                    showToast(data.message, "success");
+                    setTimeout(() => window.location.reload(), 1200);
+                  } else {
+                    showToast(data.message, "error");
+                  }
+                });
+            });
+          }
+        }
+      });
+    });
+
+    const closeDrawer = () => drawer.style.display = "none";
+    document.getElementById("close-po-drawer").addEventListener("click", closeDrawer);
+    drawer.addEventListener("click", (e) => {
+      if (e.target === drawer) closeDrawer();
+    });
+
+    // Create RFQ Modal
+    if (canEditPurchases && !isReadOnly) {
+      const createModal = document.getElementById("po-create-modal");
+      const linesContainer = document.getElementById("po-lines-container");
+
+      const addLine = () => {
+        const row = document.createElement("div");
+        row.className = "line-item-row";
+        row.innerHTML = `
+          <select class="form-control line-product-select" required>
+            <option value="" disabled selected>Select component...</option>
+            ${dbProducts.map(p => `<option value="${p.id}" data-cost="${p.cost}">${p.name} (${p.sku})</option>`).join('')}
+          </select>
+          <input type="number" class="form-control line-qty-input" required min="1" value="10" style="text-align:right;">
+          <input type="number" class="form-control line-cost-input" required min="0" step="0.01" value="0.00" style="text-align:right;">
+          <button type="button" class="line-remove-btn">✕</button>
+        `;
+        linesContainer.appendChild(row);
+
+        row.querySelector(".line-product-select").addEventListener("change", (e) => {
+          const opt = e.target.options[e.target.selectedIndex];
+          row.querySelector(".line-cost-input").value = parseFloat(opt.dataset.cost).toFixed(2);
+        });
+
+        row.querySelector(".line-remove-btn").addEventListener("click", () => linesContainer.removeChild(row));
+      };
+
+      document.getElementById("btn-open-create-po-modal").addEventListener("click", () => {
+        linesContainer.innerHTML = '';
+        addLine();
+        createModal.style.display = "flex";
+      });
+
+      document.getElementById("btn-add-po-line").addEventListener("click", addLine);
+      
+      const hideModal = () => createModal.style.display = "none";
+      document.getElementById("close-po-modal").addEventListener("click", hideModal);
+      document.getElementById("cancel-po-modal").addEventListener("click", hideModal);
+
+      document.getElementById("po-create-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const items = [];
+        
+        document.querySelectorAll("#po-lines-container .line-item-row").forEach(row => {
+          const sel = row.querySelector(".line-product-select");
+          const qty = parseInt(row.querySelector(".line-qty-input").value) || 0;
+          const pr = parseFloat(row.querySelector(".line-cost-input").value) || 0;
+          if (sel.value && qty > 0) {
+            items.push({ productId: sel.value, quantity: qty, unitPrice: pr });
+          }
+        });
+
+        const fd = new FormData();
+        fd.append('vendorName', document.getElementById("po-vendor").value);
+        fd.append('items', JSON.stringify(items));
+
+        fetch('/purchases/create/', { method: 'POST', body: fd })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              showToast(data.message, "success");
+              hideModal();
+              setTimeout(() => window.location.reload(), 1000);
+            } else {
+              showToast(data.message, "error");
+            }
+          });
+      });
+    }
+  });
+
+  // Receipt Modal
+  function openReceiptValidationModal(poId, lines) {
+    document.getElementById("receipt-po-id").value = poId;
+    const container = document.getElementById("receipt-items-container");
+
+    container.innerHTML = lines.map(item => {
+      const remaining = item.quantity - item.received;
+      return `
+        <div style="border:1px solid var(--border-color); padding:12px; border-radius:var(--border-radius-md); background-color:var(--bg-secondary);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700;">${item.name}</span>
+            <span style="font-size:12px; color:var(--text-secondary);">Ordered: ${item.quantity} (Pending: ${remaining})</span>
+          </div>
+          <div class="form-grid" style="grid-template-columns: 2fr 1fr; margin-bottom:0; align-items:center; margin-top:10px;">
+            <div style="font-size:12px; color:var(--text-secondary);">
+              Validate physical count:
+            </div>
+            <div class="form-group" style="gap:2px;">
+              <label style="font-size:10px;">Receive Quantity</label>
+              <input type="number" class="form-control receipt-qty-input" data-prod-id="${item.id}" min="0" max="${remaining}" value="${remaining}" style="padding:6px; font-weight:700; text-align:center;">
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const modal = document.getElementById("receipt-modal");
+    modal.style.display = "flex";
+
+    const hide = () => modal.style.display = "none";
+    document.getElementById("close-rec-modal").addEventListener("click", hide);
+    document.getElementById("cancel-rec-modal").addEventListener("click", hide);
+
+    document.getElementById("receipt-validation-form").onsubmit = (e) => {
+      e.preventDefault();
+      
+      const receipts = {};
+      modal.querySelectorAll(".receipt-qty-input").forEach(input => {
+        receipts[input.dataset.prodId] = parseInt(input.value) || 0;
+      });
+
+      const fd = new FormData();
+      fd.append('receipts', JSON.stringify(receipts));
+
+      fetch(`/purchases/${poId}/receive/`, { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            showToast(data.message, "success");
+            hide();
+            setTimeout(() => window.location.reload(), 1200);
+          } else {
+            showToast(data.message, "error");
+          }
+        });
+    };
+  }
+</script>
+{% endblock %}

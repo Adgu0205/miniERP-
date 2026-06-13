@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Control{% endblock %}
+{% block heading %}Inventory Control &amp; Valuation{% endblock %}
+
+{% block content %}
+<!-- Summary Widgets -->
+<div class="dashboard-grid" style="margin-bottom: 24px;">
+  
+  <div class="kpi-card" style="min-height: 120px;">
+    <div class="kpi-header">
+      <span>Total Valuation (Cost Basis)</span>
+      <div class="kpi-icon-container green-accent"><strong>₹</strong></div>
+    </div>
+    <div class="kpi-val" style="font-size: 28px; margin-top: 8px;">
+      ₹{{ total_valuation|floatformat:2 }}
+    </div>
+  </div>
+
+  <div class="kpi-card" style="min-height: 120px;">
+    <div class="kpi-header">
+      <span>Low Stock Alerts</span>
+      <span class="badge badge-cancelled" style="font-size: 10px;">{{ low_stock|length }} Warning</span>
+    </div>
+    <div style="font-size:13px; color:var(--text-secondary); margin-top:12px; max-height:45px; overflow-y:auto;">
+      {% for p in low_stock %}
+        {{ p.sku }} ({{ p.free_to_use }}/{{ p.reorder_threshold }}){% if not forloop.last %}, {% endif %}
+      {% empty %}
+        All levels safe.
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="kpi-card" style="min-height: 120px;">
+    <div class="kpi-header">
+      <span>Committed/Reserved Stock</span>
+      <span class="badge badge-confirmed" style="font-size: 10px;">{{ reserved_stock|length }} Items</span>
+    </div>
+    <div style="font-size:13px; color:var(--text-secondary); margin-top:12px; max-height:45px; overflow-y:auto;">
+      {% for p in reserved_stock %}
+        {{ p.sku }} (x{{ p.reserved }}){% if not forloop.last %}, {% endif %}
+      {% empty %}
+        No reserved stock.
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="kpi-card" style="min-height: 120px;">
+    <div class="kpi-header">
+      <span>Overstock Risks</span>
+      <span class="badge badge-progress" style="font-size: 10px;">{{ overstocked|length }} Lines</span>
+    </div>
+    <div style="font-size:13px; color:var(--text-secondary); margin-top:12px; max-height:45px; overflow-y:auto;">
+      {% for p in overstocked %}
+        {{ p.sku }} ({{ p.on_hand }} units){% if not forloop.last %}, {% endif %}
+      {% empty %}
+        No overstocks.
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Valuation Table Grid -->
+<div class="card-panel">
+  <div class="panel-header">
+    <h3 class="panel-title">Inventory Valuation &amp; Auditing</h3>
+    <div style="display:flex; gap:10px;">
+      <a href="{% url 'inventory_movements' %}" class="btn btn-secondary btn-sm">View Movements</a>
+      {% if permissions.can_adjust_inventory and not permissions.is_read_only %}
+        <button class="btn btn-primary btn-sm" id="btn-master-adjust-inventory">Post Stock Adjustment</button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="erp-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Product Name</th>
+          <th>Category</th>
+          <th style="text-align:right;">Unit Cost (₹)</th>
+          <th style="text-align:center;">On Hand</th>
+          <th style="text-align:center;">Reserved</th>
+          <th style="text-align:center;">Free Stock</th>
+          <th style="text-align:right;">Total Value (₹)</th>
+          <th style="text-align:center;">Status</th>
+          {% if permissions.can_adjust_inventory and not permissions.is_read_only %}
+            <th>Actions</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+          <tr>
+            <td style="font-weight:700;">{{ p.sku }}</td>
+            <td style="font-weight:600;">{{ p.name }}</td>
+            <td><span style="font-size:12px; color:var(--text-secondary);">{{ p.category }}</span></td>
+            <td style="text-align:right;">₹{{ p.cost_price|floatformat:2 }}</td>
+            <td style="text-align:center; font-weight:600;">{{ p.on_hand }}</td>
+            <td style="text-align:center; color:{% if p.reserved > 0 %}#ef4444{% else %}var(--text-muted){% endif %}; font-weight:600;">{{ p.reserved }}</td>
+            <td style="text-align:center; font-weight:700; color:var(--accent-hover);">{{ p.free_to_use }}</td>
+            <td style="text-align:right; font-weight:700; color:var(--text-primary);">₹{{ p.on_hand|default:0 }}</td>
+            <td style="text-align:center;">
+              <span class="badge {% if p.status == 'Low Stock' %}badge-cancelled{% elif p.status == 'Active' %}badge-completed{% else %}badge-draft{% endif %}" style="font-size:10px; padding:2px 6px;">
+                {{ p.status }}
+              </span>
+            </td>
+            {% if permissions.can_adjust_inventory and not permissions.is_read_only %}
+              <td>
+                <button class="btn btn-secondary btn-sm adjust-row-btn" 
+                        data-id="{{ p.id }}"
+                        data-name="{{ p.name }}"
+                        data-sku="{{ p.sku }}"
+                        data-onhand="{{ p.on_hand }}"
+                        style="padding:4px 8px; font-size:11px;">Adjust</button>
+              </td>
+            {% endif %}
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="10" style="text-align:center; color:var(--text-muted);">No products registered.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- P7: Low Stock Alert Section -->
+{% if low_stock %}
+<div class="card-panel" style="margin-top:24px; border-left:4px solid #ef4444;">
+  <div class="panel-header">
+    <h3 class="panel-title" style="color:#ef4444;">⚠️ Low Stock Alert Section</h3>
+    <span class="badge badge-cancelled">{{ low_stock|length }} Products Below Threshold</span>
+  </div>
+  <div class="table-responsive">
+    <table class="erp-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Product Name</th>
+          <th style="text-align:center;">Free Stock</th>
+          <th style="text-align:center;">Reorder Threshold</th>
+          <th style="text-align:center;">Deficit</th>
+          <th>Procurement Strategy</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in low_stock %}
+          <tr>
+            <td style="font-weight:700;">{{ p.sku }}</td>
+            <td style="font-weight:600;">{{ p.name }}</td>
+            <td style="text-align:center; color:#ef4444; font-weight:700;">{{ p.free_to_use }}</td>
+            <td style="text-align:center; font-weight:600;">{{ p.reorder_threshold }}</td>
+            <td style="text-align:center; color:#b91c1c; font-weight:700;">-{{ p.reorder_threshold|add:"-"|add:p.free_to_use }}</td>
+            <td>
+              <span class="badge badge-mto" style="font-size:10px;">{{ p.procure_strategy }}-{{ p.procure_type }}</span>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- P7: Overstock Section -->
+{% if overstocked %}
+<div class="card-panel" style="margin-top:24px; border-left:4px solid #d97706;">
+  <div class="panel-header">
+    <h3 class="panel-title" style="color:#d97706;">📦 Overstock Risk Section</h3>
+    <span class="badge badge-progress">{{ overstocked|length }} Products Overstocked</span>
+  </div>
+  <div class="table-responsive">
+    <table class="erp-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Product Name</th>
+          <th style="text-align:center;">On Hand</th>
+          <th style="text-align:center;">Reorder Threshold</th>
+          <th style="text-align:center;">Ratio</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in overstocked %}
+          <tr>
+            <td style="font-weight:700;">{{ p.sku }}</td>
+            <td style="font-weight:600;">{{ p.name }}</td>
+            <td style="text-align:center; color:#d97706; font-weight:700;">{{ p.on_hand }}</td>
+            <td style="text-align:center; font-weight:600;">{{ p.reorder_threshold }}</td>
+            <td style="text-align:center; font-size:12px; color:var(--text-secondary);">{{ p.on_hand }} / {{ p.reorder_threshold }} threshold</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- P7: Recently Changed Products (from real ledger data) -->
+{% if recently_changed %}
+<div class="card-panel" style="margin-top:24px; border-left:4px solid #10b981;">
+  <div class="panel-header">
+    <h3 class="panel-title" style="color:var(--accent-hover);">🔄 Recently Moved Products (Last 7 Days)</h3>
+    <a href="{% url 'inventory_movements' %}" class="btn btn-secondary btn-sm">View All Movements</a>
+  </div>
+  <div style="display:flex; flex-wrap:wrap; gap:12px; padding-top:4px;">
+    {% for p in recently_changed %}
+      <div style="border:1px solid var(--border-color); border-radius:var(--border-radius-md); padding:12px 16px; background-color:var(--bg-secondary); min-width:180px;">
+        <div style="font-weight:700; font-size:13px;">{{ p.name }}</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">{{ p.sku }}</div>
+        <div style="margin-top:8px; display:flex; gap:12px;">
+          <div>
+            <span style="font-size:10px; text-transform:uppercase; color:var(--text-secondary);">On Hand</span>
+            <div style="font-weight:700; color:var(--text-primary);">{{ p.on_hand }}</div>
+          </div>
+          <div>
+            <span style="font-size:10px; text-transform:uppercase; color:var(--text-secondary);">Free</span>
+            <div style="font-weight:700; color:var(--accent-hover);">{{ p.free_to_use }}</div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal Form overlay -->
+<div class="modal-overlay" id="adjustment-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Physical Inventory Stock Correction</h3>
+      <button class="modal-close" id="close-adj-modal">✕</button>
+    </div>
+    <form id="adjustment-form">
+      <div class="modal-body">
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="adj-product">Select Product *</label>
+          <select id="adj-product" class="form-control" required>
+            <option value="" disabled selected>Choose product...</option>
+            {% for p in products %}
+              <option value="{{ p.id }}" data-onhand="{{ p.on_hand }}">
+                {{ p.name }} (SKU: {{ p.sku }} | Current: {{ p.on_hand }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="adj-qty">New Physical On-Hand Count *</label>
+            <input type="number" id="adj-qty" class="form-control" min="0" required value="0">
+          </div>
+          <div class="form-group">
+            <label style="opacity:0.6;">Current Count</label>
+            <input type="text" id="adj-current" class="form-control" disabled style="background-color:var(--bg-secondary);" value="-">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:16px;">
+          <label for="adj-reason">Correction Reason *</label>
+          <input type="text" id="adj-reason" class="form-control" required placeholder="Cycle count, scrap correction, damaged goods...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel-adj-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Submit Correction</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    {% if permissions.can_adjust_inventory and not permissions.is_read_only %}
+      const modal = document.getElementById("adjustment-modal");
+      const form = document.getElementById("adjustment-form");
+      const select = document.getElementById("adj-product");
+      const qtyInput = document.getElementById("adj-qty");
+      const currentInput = document.getElementById("adj-current");
+
+      const showModal = (prodId = null, onhand = 0) => {
+        if (prodId) {
+          select.value = prodId;
+          select.disabled = true;
+          qtyInput.value = onhand;
+          currentInput.value = onhand;
+        } else {
+          select.disabled = false;
+          form.reset();
+          currentInput.value = "-";
+        }
+        modal.style.display = "flex";
+      };
+
+      const hide = () => { modal.style.display = "none"; select.disabled = false; };
+      document.getElementById("close-adj-modal").addEventListener("click", hide);
+      document.getElementById("cancel-adj-modal").addEventListener("click", hide);
+
+      select.addEventListener("change", (e) => {
+        const opt = e.target.options[e.target.selectedIndex];
+        const stock = opt.dataset.onhand;
+        currentInput.value = stock;
+        qtyInput.value = stock;
+      });
+
+      document.getElementById("btn-master-adjust-inventory").addEventListener("click", () => showModal());
+
+      document.querySelectorAll(".adjust-row-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          showModal(btn.dataset.id, btn.dataset.onhand);
+        });
+      });
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const fd = new FormData();
+        fd.append('productId', select.value);
+        fd.append('quantity', qtyInput.value);
+        fd.append('reason', document.getElementById("adj-reason").value);
+
+        fetch('/inventory/adjust/', { method: 'POST', body: fd })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              showToast(data.message, "success");
+              hide();
+              setTimeout(() => window.location.reload(), 1200);
+            } else {
+              showToast(data.message, "error");
+            }
+          });
+      });
+    {% endif %}
+  });
+</script>
+{% endblock %}

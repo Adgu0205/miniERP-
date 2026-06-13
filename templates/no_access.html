@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Access Restricted{% endblock %}
+{% block heading %}Access Restricted{% endblock %}
+
+{% block content %}
+<div class="no-access-container" style="background-color: var(--bg-primary); border-radius: var(--border-radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); max-width: 600px; margin: 40px auto; padding: 60px 40px;">
+  <div class="no-access-icon">✕</div>
+  <h2 class="no-access-title">Access Restricted</h2>
+  <p class="no-access-desc">
+    Your current active role (<strong>{{ user_info.name }}</strong>) does not have authorization to view the <strong>{{ page_name }}</strong> module.
+  </p>
+  <p class="no-access-desc" style="margin-top: 16px; font-size: 13px; color: var(--text-muted);">
+    <em>Use the "Active Role" selector in the top-right header to switch roles for testing.</em>
+  </p>
+</div>
+{% endblock %}

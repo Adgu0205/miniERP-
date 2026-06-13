@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% load erp_filters %}
+
+{% block title %}Bills of Material{% endblock %}
+{% block heading %}Bills of Material (BoMs){% endblock %}
+
+{% block content %}
+<div class="panel-header" style="background-color:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--border-radius-lg); padding:20px 24px; margin-bottom:24px; box-shadow:var(--shadow-sm); display:flex; justify-content:space-between; align-items:center;">
+  <h3 class="panel-title">Bill of Materials (BoMs)</h3>
+  {% if permissions.can_edit_bom and not permissions.is_read_only %}
+    <button class="btn btn-primary btn-sm" id="btn-open-create-bom-modal">+ Create BoM Recipe</button>
+  {% endif %}
+</div>
+
+<!-- BoMs card grid -->
+<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:24px;">
+  {% for bom in boms %}
+    <div class="card-panel" style="margin-bottom:0; height:100%;">
+      <div class="panel-header" style="border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:16px;">
+        <h4 class="panel-title" style="font-size:16px; color:var(--text-primary);">{{ bom.name }}</h4>
+        <span class="badge badge-mto" style="font-size:11px;">Active Recipe</span>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <h5 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px;">1. Required Components</h5>
+        <div class="lines-list" style="margin-top:0;">
+          <div class="line-header" style="grid-template-columns: 2fr 1fr; border:none; padding:6px 12px; background-color:var(--bg-secondary);">
+            <span>Component Name</span>
+            <span style="text-align:right;">Quantity</span>
+          </div>
+          {% for comp in bom.components.all %}
+            <div class="line-item-row" style="grid-template-columns: 2fr 1fr; padding:8px 12px;">
+              <span style="font-weight:600;">{{ comp.product.name }}</span>
+              <span style="text-align:right; font-weight:700;">{{ comp.quantity }} units</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <h5 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px;">2. Operation Routing Steps</h5>
+        <div class="timeline" style="padding-left:16px;">
+          {% for op in bom.operations.all %}
+            <div class="timeline-item" style="padding-bottom:12px;">
+              <div class="timeline-dot green" style="top:2px; width:8px; height:8px; left:-16px;"></div>
+              <div class="timeline-content" style="font-size:13px;">
+                <strong style="color:var(--text-primary);">{{ op.name }}</strong> at 
+                <span style="color:var(--accent-hover); font-weight:600;">{{ op.work_center }}</span> 
+                <span style="color:var(--text-muted); font-size:11px;">({{ op.duration }} mins)</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <p style="text-align:center; color:var(--text-muted); grid-column:span 2; margin-top:40px;">No Bills of Material registered.</p>
+  {% endfor %}
+</div>
+
+<!-- BoM Creation Modal -->
+<div class="modal-overlay" id="bom-create-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 720px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Create Manufacturing Recipe (BoM)</h3>
+      <button class="modal-close" id="close-bom-modal">✕</button>
+    </div>
+    <form id="bom-create-form">
+      <div class="modal-body" style="max-height:60vh; overflow-y:auto;">
+        
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="bom-product">Finished Product Link *</label>
+          <select id="bom-product" class="form-control" required>
+            <option value="" disabled selected>Select finished furniture product...</option>
+            {% for p in products_without_boms %}
+              <option value="{{ p.id }}">{{ p.name }} ({{ p.sku }})</option>
+            {% empty %}
+              <option value="" disabled>No recipe-free finished goods available</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Ingredients section -->
+        <div style="margin-top:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary);">1. Components & Quantities</h4>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-bom-component">+ Add Component</button>
+          </div>
+          <div class="lines-list">
+            <div class="line-header" style="grid-template-columns: 2fr 1fr 40px;">
+              <span>Component Name</span>
+              <span style="text-align:right;">Quantity Per Finished Unit</span>
+              <span></span>
+            </div>
+            <div id="bom-components-container">
+              <!-- Rows render dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Operations section -->
+        <div style="margin-top:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary);">2. Operation Routing Steps</h4>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-bom-operation">+ Add Operation</button>
+          </div>
+          <div class="lines-list">
+            <div class="line-header" style="grid-template-columns: 1.5fr 1.5fr 1fr 40px;">
+              <span>Operation</span>
+              <span>Work Center</span>
+              <span style="text-align:right;">Duration (Mins)</span>
+              <span></span>
+            </div>
+            <div id="bom-operations-container">
+              <!-- Rows render dynamically -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel-bom-modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save BoM Recipe</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const dbComponents = [
+    {% for c in components %}
+    { id: "{{ c.id }}", name: "{{ c.name|escapejs }}", sku: "{{ c.sku }}" },
+    {% endfor %}
+  ];
+
+  document.addEventListener("DOMContentLoaded", () => {
+    {% if permissions.can_edit_bom and not permissions.is_read_only %}
+      const modal = document.getElementById("bom-create-modal");
+      const compsContainer = document.getElementById("bom-components-container");
+      const opsContainer = document.getElementById("bom-operations-container");
+
+      const addComponentRow = () => {
+        const row = document.createElement("div");
+        row.className = "line-item-row";
+        row.style.gridTemplateColumns = "2fr 1fr 40px";
+        row.innerHTML = `
+          <select class="form-control comp-select" required>
+            <option value="" disabled selected>Select component...</option>
+            ${dbComponents.map(c => `<option value="${c.id}">${c.name} (${c.sku})</option>`).join('')}
+          </select>
+          <input type="number" class="form-control comp-qty" required min="1" value="1" style="text-align:right;">
+          <button type="button" class="line-remove-btn">✕</button>
+        `;
+        compsContainer.appendChild(row);
+        row.querySelector(".line-remove-btn").addEventListener("click", () => compsContainer.removeChild(row));
+      };
+
+      const addOperationRow = () => {
+        const row = document.createElement("div");
+        row.className = "line-item-row";
+        row.style.gridTemplateColumns = "1.5fr 1.5fr 1fr 40px";
+        row.innerHTML = `
+          <input type="text" class="form-control op-name" placeholder="Assembly, Painting..." required>
+          <select class="form-control op-wc" required>
+            <option value="Assembly Line">Assembly Line</option>
+            <option value="Painting Station">Painting Station</option>
+            <option value="Packaging Unit">Packaging Unit</option>
+          </select>
+          <input type="number" class="form-control op-dur" required min="1" value="30" style="text-align:right;">
+          <button type="button" class="line-remove-btn">✕</button>
+        `;
+        opsContainer.appendChild(row);
+        row.querySelector(".line-remove-btn").addEventListener("click", () => opsContainer.removeChild(row));
+      };
+
+      document.getElementById("btn-open-create-bom-modal").addEventListener("click", () => {
+        compsContainer.innerHTML = '';
+        opsContainer.innerHTML = '';
+        addComponentRow();
+        addOperationRow();
+        modal.style.display = "flex";
+      });
+
+      document.getElementById("btn-add-bom-component").addEventListener("click", addComponentRow);
+      document.getElementById("btn-add-bom-operation").addEventListener("click", addOperationRow);
+
+      const hideModal = () => modal.style.display = "none";
+      document.getElementById("close-bom-modal").addEventListener("click", hideModal);
+      document.getElementById("cancel-bom-modal").addEventListener("click", hideModal);
+
+      document.getElementById("bom-create-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        
+        const comps = [];
+        document.querySelectorAll("#bom-components-container .line-item-row").forEach(row => {
+          const sel = row.querySelector(".comp-select");
+          const qty = parseInt(row.querySelector(".comp-qty").value) || 0;
+          if (sel.value && qty > 0) {
+            comps.push({ productId: sel.value, quantity: qty });
+          }
+        });
+
+        const ops = [];
+        document.querySelectorAll("#bom-operations-container .line-item-row").forEach(row => {
+          const name = row.querySelector(".op-name").value;
+          const wc = row.querySelector(".op-wc").value;
+          const dur = parseInt(row.querySelector(".op-dur").value) || 0;
+          if (name && dur > 0) {
+            ops.push({ name, workCenter: wc, duration: dur });
+          }
+        });
+
+        const fd = new FormData();
+        fd.append('productId', document.getElementById("bom-product").value);
+        fd.append('components', JSON.stringify(comps));
+        fd.append('operations', JSON.stringify(ops));
+
+        fetch('/bom/create/', { method: 'POST', body: fd })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              showToast(data.message, "success");
+              hideModal();
+              setTimeout(() => window.location.reload(), 1000);
+            } else {
+              showToast(data.message, "error");
+            }
+          });
+      });
+    {% endif %}
+  });
+</script>
+{% endblock %}
