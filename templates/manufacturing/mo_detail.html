@@ -1,44 +1,75 @@
 {% extends "base.html" %}
 {% block breadcrumb %}Manufacturing / {{ mo.reference }}{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <div>
-    <h1 class="text-xl font-semibold">{{ mo.reference }}
-      {% include "partials/badge.html" with status=mo.status label=mo.get_status_display %}</h1>
-    <p class="text-sm text-slate-500">{{ mo.quantity }} × {{ mo.product.name }}{% if mo.origin %} · {{ mo.origin }}{% endif %}</p>
-  </div>
+
+<div class="flex items-center justify-between gap-3 mb-3 no-print">
+  <a href="{% url 'manufacturing:list' %}" class="btn btn-soft">← Back</a>
   <div class="flex gap-2">
     {% if mo.status == 'draft' %}
-      <a href="{% url 'manufacturing:edit' mo.pk %}" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">Edit</a>
-      <a href="{% url 'manufacturing:action' mo.pk 'confirm' %}" class="text-sm px-4 py-2 rounded-md bg-sky-600 text-white">Confirm (reserve)</a>
-      <a href="{% url 'manufacturing:action' mo.pk 'cancel' %}" class="text-sm px-3 py-2 rounded-md bg-rose-100 text-rose-700">Cancel</a>
+      <a href="{% url 'manufacturing:edit' mo.pk %}" class="btn btn-soft">Edit</a>
+      <a href="{% url 'manufacturing:action' mo.pk 'confirm' %}" class="btn btn-info">Confirm (reserve)</a>
+      <a href="{% url 'manufacturing:action' mo.pk 'cancel' %}" class="btn btn-danger-soft">Cancel</a>
     {% elif mo.status == 'confirmed' %}
-      <a href="{% url 'manufacturing:action' mo.pk 'start' %}" class="text-sm px-4 py-2 rounded-md bg-amber-500 text-white">Start</a>
-      <a href="{% url 'manufacturing:action' mo.pk 'done' %}" class="text-sm px-4 py-2 rounded-md bg-emerald-600 text-white">Mark Done</a>
+      <a href="{% url 'manufacturing:action' mo.pk 'start' %}" class="btn btn-warn">Start</a>
+      <a href="{% url 'manufacturing:action' mo.pk 'done' %}" class="btn btn-success">Mark Done</a>
     {% elif mo.status == 'in_progress' %}
-      <a href="{% url 'manufacturing:action' mo.pk 'done' %}" class="text-sm px-4 py-2 rounded-md bg-emerald-600 text-white">Mark Done</a>
+      <a href="{% url 'manufacturing:action' mo.pk 'done' %}" class="btn btn-success">Mark Done</a>
     {% endif %}
+    <a href="{% url 'audit:list' %}?ref={{ mo.reference }}" class="btn btn-soft">Logs</a>
+    <button onclick="window.print()" class="btn btn-soft">Print</button>
+  </div>
+</div>
+
+<div class="card overflow-hidden mb-4">
+  <div class="px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+    <div class="flex items-start justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-xs uppercase tracking-wider text-slate-400">Manufacturing Order</div>
+        <h1 class="text-2xl font-bold">{{ mo.reference }}</h1>
+      </div>
+      {% include "partials/statusbar.html" with steps=steps cancelled=cancelled %}
+    </div>
+  </div>
+  <div class="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-4 text-sm">
+    <div><div class="text-xs text-slate-500 mb-0.5">Finished Product</div>
+      <div class="font-medium">{{ mo.product.name }}</div></div>
+    <div><div class="text-xs text-slate-500 mb-0.5">Quantity</div>
+      <div class="font-medium">{{ mo.quantity }}</div></div>
+    <div><div class="text-xs text-slate-500 mb-0.5">Bill of Materials</div>
+      <div class="font-medium">{{ mo.bom|default:"—" }}</div></div>
+    <div><div class="text-xs text-slate-500 mb-0.5">Assignee</div>
+      <div class="font-medium">{{ mo.assignee.username|default:"—" }}</div></div>
+    <div><div class="text-xs text-slate-500 mb-0.5">Deadline</div>
+      <div class="font-medium {% if mo.is_delayed %}text-rose-500{% endif %}">{{ mo.deadline|default:"—" }}{% if mo.is_delayed %} ⚠{% endif %}</div></div>
+    {% if mo.origin %}<div><div class="text-xs text-slate-500 mb-0.5">Origin</div>
+      <div class="font-medium text-slate-600">{{ mo.origin }}</div></div>{% endif %}
+    <div><div class="text-xs text-slate-500 mb-0.5">Status</div>
+      <div>{% include "partials/badge.html" with status=mo.status label=mo.get_status_display %}</div></div>
   </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
   <div class="card p-5">
     <h3 class="font-semibold text-sm mb-3">Components (from BoM)</h3>
-    <table class="erp"><thead><tr><th>Component</th><th class="text-right">Needed</th><th class="text-right">Free Stock</th></tr></thead>
-      <tbody>{% for comp, qty in requirements %}<tr>
-        <td>{{ comp.name }}</td><td class="text-right">{{ qty }}</td>
-        <td class="text-right {% if comp.free_to_use < qty %}text-rose-500{% else %}text-emerald-600{% endif %}">{{ comp.free_to_use }}</td>
-      </tr>{% empty %}<tr><td colspan="3" class="text-slate-500 py-4 text-center">No BoM linked.</td></tr>{% endfor %}</tbody>
-    </table>
+    <div class="border border-slate-100 dark:border-slate-800 rounded-lg overflow-x-auto">
+      <table class="erp"><thead><tr><th>Component</th><th class="text-right">Needed</th><th class="text-right">Free Stock</th></tr></thead>
+        <tbody>{% for comp, qty in requirements %}<tr>
+          <td>{{ comp.name }}</td><td class="text-right">{{ qty }}</td>
+          <td class="text-right {% if comp.free_to_use < qty %}text-rose-500{% else %}text-slate-600{% endif %}">{{ comp.free_to_use }}</td>
+        </tr>{% empty %}<tr><td colspan="3" class="text-slate-500 py-4 text-center">No BoM linked.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
   </div>
   <div class="card p-5">
     <h3 class="font-semibold text-sm mb-3">Work Orders</h3>
-    <table class="erp"><thead><tr><th>Step</th><th>Work Center</th><th class="text-right">Mins</th><th>Status</th></tr></thead>
-      <tbody>{% for wo in work_orders %}<tr>
-        <td>{{ wo.name }}</td><td>{{ wo.work_center.name|default:"—" }}</td><td class="text-right">{{ wo.duration_mins }}</td>
-        <td>{% include "partials/badge.html" with status=wo.status label=wo.get_status_display %}</td>
-      </tr>{% empty %}<tr><td colspan="4" class="text-slate-500 py-4 text-center">Confirm to generate work orders.</td></tr>{% endfor %}</tbody>
-    </table>
+    <div class="border border-slate-100 dark:border-slate-800 rounded-lg overflow-x-auto">
+      <table class="erp"><thead><tr><th>Step</th><th>Work Center</th><th class="text-right">Mins</th><th>Status</th></tr></thead>
+        <tbody>{% for wo in work_orders %}<tr>
+          <td>{{ wo.name }}</td><td>{{ wo.work_center.name|default:"—" }}</td><td class="text-right">{{ wo.duration_mins }}</td>
+          <td>{% include "partials/badge.html" with status=wo.status label=wo.get_status_display %}</td>
+        </tr>{% empty %}<tr><td colspan="4" class="text-slate-500 py-4 text-center">Confirm to generate work orders.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
   </div>
 </div>
 {% endblock %}

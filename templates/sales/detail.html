@@ -1,42 +1,83 @@
 {% extends "base.html" %}
 {% block breadcrumb %}Sales / {{ so.reference }}{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <div>
-    <h1 class="text-xl font-semibold">{{ so.reference }}
-      {% include "partials/badge.html" with status=so.status label=so.get_status_display %}</h1>
-    <p class="text-sm text-slate-500">{{ so.customer.name|default:"No customer" }} · {{ so.order_date }}</p>
-  </div>
+
+<!-- Action bar -->
+<div class="flex items-center justify-between gap-3 mb-3 no-print">
+  <a href="{% url 'sales:list' %}" class="btn btn-soft">← Back</a>
   <div class="flex gap-2">
     {% if so.status == 'draft' %}
-      <a href="{% url 'sales:edit' so.pk %}" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">Edit</a>
-      <a href="{% url 'sales:action' so.pk 'confirm' %}" class="text-sm px-4 py-2 rounded-md bg-sky-600 text-white">Confirm</a>
-      <a href="{% url 'sales:action' so.pk 'cancel' %}" class="text-sm px-3 py-2 rounded-md bg-rose-100 text-rose-700">Cancel</a>
+      <a href="{% url 'sales:edit' so.pk %}" class="btn btn-soft">Edit</a>
+      <a href="{% url 'sales:action' so.pk 'confirm' %}" class="btn btn-info">Confirm</a>
+      <a href="{% url 'sales:action' so.pk 'cancel' %}" class="btn btn-danger-soft">Cancel</a>
     {% elif so.status == 'confirmed' or so.status == 'partial' %}
-      <a href="{% url 'sales:action' so.pk 'deliver' %}" class="text-sm px-4 py-2 rounded-md bg-emerald-600 text-white">Deliver</a>
-      <a href="{% url 'sales:action' so.pk 'cancel' %}" class="text-sm px-3 py-2 rounded-md bg-rose-100 text-rose-700">Cancel</a>
+      <a href="{% url 'sales:action' so.pk 'deliver' %}" class="btn btn-success">Deliver</a>
+      <a href="{% url 'sales:action' so.pk 'cancel' %}" class="btn btn-danger-soft">Cancel</a>
     {% endif %}
+    <a href="{% url 'audit:list' %}?ref={{ so.reference }}" class="btn btn-soft">Logs</a>
+    <button onclick="window.print()" class="btn btn-soft">Print</button>
   </div>
 </div>
 
-<div class="card overflow-x-auto">
-  <table class="erp">
-    <thead><tr><th>Product</th><th class="text-right">Ordered</th><th class="text-right">Delivered</th>
-      <th class="text-right">Free Stock</th><th class="text-right">Shortage</th><th class="text-right">Unit ₹</th><th class="text-right">Subtotal</th></tr></thead>
-    <tbody>
-      {% for row in availability %}
-      <tr>
-        <td class="font-medium">{{ row.line.product.name }}</td>
-        <td class="text-right">{{ row.line.quantity }}</td>
-        <td class="text-right">{{ row.line.delivered_qty }}</td>
-        <td class="text-right {% if row.free <= 0 %}text-rose-500{% else %}text-emerald-600{% endif %}">{{ row.free }}</td>
-        <td class="text-right {% if row.shortage > 0 %}text-amber-600 font-semibold{% endif %}">{{ row.shortage }}</td>
-        <td class="text-right">{{ row.line.unit_price }}</td>
-        <td class="text-right">{{ row.line.subtotal }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-    <tfoot><tr class="font-semibold"><td colspan="6" class="text-right">Total</td><td class="text-right">₹{{ so.total }}</td></tr></tfoot>
-  </table>
+<!-- Document -->
+<div class="card overflow-hidden">
+  <!-- header strip -->
+  <div class="px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+    <div class="flex items-start justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-xs uppercase tracking-wider text-slate-400">Sales Order</div>
+        <h1 class="text-2xl font-bold">{{ so.reference }}</h1>
+      </div>
+      {% include "partials/statusbar.html" with steps=steps cancelled=cancelled %}
+    </div>
+  </div>
+
+  <!-- fields -->
+  <div class="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-4 text-sm">
+    <div><div class="text-xs text-slate-500 mb-0.5">Customer</div>
+      <div class="font-medium">{{ so.customer.name|default:"—" }}</div></div>
+    <div><div class="text-xs text-slate-500 mb-0.5">Order Date</div>
+      <div class="font-medium">{{ so.order_date }}</div></div>
+    <div><div class="text-xs text-slate-500 mb-0.5">Delivery Deadline</div>
+      <div class="font-medium {% if so.is_delayed %}text-rose-500{% endif %}">{{ so.deadline|default:"—" }}{% if so.is_delayed %} ⚠{% endif %}</div></div>
+    <div><div class="text-xs text-slate-500 mb-0.5">Status</div>
+      <div>{% include "partials/badge.html" with status=so.status label=so.get_status_display %}</div></div>
+  </div>
+
+  <!-- order lines -->
+  <div class="px-6 pb-2">
+    <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Order Lines</div>
+    <div class="border border-slate-100 dark:border-slate-800 rounded-lg overflow-x-auto">
+      <table class="erp">
+        <thead><tr>
+          <th>Product</th><th class="text-right">Ordered</th><th class="text-right">Delivered</th>
+          <th class="text-right">Free Stock</th><th class="text-right">Shortage</th>
+          <th class="text-right">Unit ₹</th><th class="text-right">Subtotal</th></tr></thead>
+        <tbody>
+          {% for row in availability %}
+          <tr>
+            <td class="font-medium">{{ row.line.product.name }}</td>
+            <td class="text-right">{{ row.line.quantity }}</td>
+            <td class="text-right">{{ row.line.delivered_qty }}</td>
+            <td class="text-right {% if row.free <= 0 %}text-rose-500{% else %}text-slate-600{% endif %}">{{ row.free }}</td>
+            <td class="text-right {% if row.shortage > 0 %}text-slate-600 font-semibold{% endif %}">{{ row.shortage }}</td>
+            <td class="text-right">{{ row.line.unit_price|floatformat:2 }}</td>
+            <td class="text-right font-medium">{{ row.line.subtotal|floatformat:2 }}</td>
+          </tr>
+          {% empty %}<tr><td colspan="7" class="text-center text-slate-500 py-6">No order lines.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- totals -->
+  <div class="px-6 py-5 flex justify-end">
+    <div class="w-full sm:w-72 space-y-1.5 text-sm">
+      <div class="flex justify-between text-slate-500"><span>Lines</span><span>{{ availability|length }}</span></div>
+      <div class="flex justify-between text-lg font-bold border-t border-slate-200 dark:border-slate-700 pt-2">
+        <span>Total</span><span class="text-slate-600">₹{{ so.total|floatformat:2 }}</span></div>
+    </div>
+  </div>
 </div>
 {% endblock %}

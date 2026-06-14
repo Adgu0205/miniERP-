@@ -1,31 +1,67 @@
 {% extends "base.html" %}
 {% block breadcrumb %}Purchase / {{ po.reference }}{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <div>
-    <h1 class="text-xl font-semibold">{{ po.reference }}
-      {% include "partials/badge.html" with status=po.status label=po.get_status_display %}</h1>
-    <p class="text-sm text-slate-500">{{ po.vendor.name|default:"No vendor" }} · {{ po.order_date }}{% if po.origin %} · {{ po.origin }}{% endif %}</p>
-  </div>
+
+<div class="flex items-center justify-between gap-3 mb-3 no-print">
+  <a href="{% url 'purchase:list' %}" class="btn btn-soft">← Back</a>
   <div class="flex gap-2">
     {% if po.status == 'draft' %}
-      <a href="{% url 'purchase:edit' po.pk %}" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">Edit</a>
-      <a href="{% url 'purchase:action' po.pk 'confirm' %}" class="text-sm px-4 py-2 rounded-md bg-sky-600 text-white">Confirm</a>
+      <a href="{% url 'purchase:edit' po.pk %}" class="btn btn-soft">Edit</a>
+      <a href="{% url 'purchase:action' po.pk 'confirm' %}" class="btn btn-info">Confirm</a>
     {% elif po.status == 'confirmed' or po.status == 'partial' %}
-      <a href="{% url 'purchase:action' po.pk 'receive' %}" class="text-sm px-4 py-2 rounded-md bg-emerald-600 text-white">Receive All</a>
+      <a href="{% url 'purchase:action' po.pk 'receive' %}" class="btn btn-success">Receive All</a>
     {% endif %}
+    <a href="{% url 'audit:list' %}?ref={{ po.reference }}" class="btn btn-soft">Logs</a>
+    <button onclick="window.print()" class="btn btn-soft">Print</button>
   </div>
 </div>
-<div class="card overflow-x-auto"><table class="erp">
-  <thead><tr><th>Product</th><th class="text-right">Ordered</th><th class="text-right">Received</th><th class="text-right">Remaining</th><th class="text-right">Unit ₹</th><th class="text-right">Subtotal</th></tr></thead>
-  <tbody>{% for l in lines %}<tr>
-    <td class="font-medium">{{ l.product.name }}</td>
-    <td class="text-right">{{ l.quantity }}</td>
-    <td class="text-right text-emerald-600">{{ l.received_qty }}</td>
-    <td class="text-right">{{ l.remaining }}</td>
-    <td class="text-right">{{ l.unit_price }}</td>
-    <td class="text-right">{{ l.subtotal }}</td>
-  </tr>{% endfor %}</tbody>
-  <tfoot><tr class="font-semibold"><td colspan="5" class="text-right">Total</td><td class="text-right">₹{{ po.total }}</td></tr></tfoot>
-</table></div>
+
+<div class="card overflow-hidden">
+  <div class="px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+    <div class="flex items-start justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-xs uppercase tracking-wider text-slate-400">Purchase Order</div>
+        <h1 class="text-2xl font-bold">{{ po.reference }}</h1>
+      </div>
+      {% include "partials/statusbar.html" with steps=steps cancelled=cancelled %}
+    </div>
+  </div>
+
+  <div class="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-4 text-sm">
+    <div><div class="text-xs text-slate-500 mb-0.5">Vendor</div>
+      <div class="font-medium">{{ po.vendor.name|default:"—" }}</div></div>
+    <div><div class="text-xs text-slate-500 mb-0.5">Order Date</div>
+      <div class="font-medium">{{ po.order_date }}</div></div>
+    <div><div class="text-xs text-slate-500 mb-0.5">Origin</div>
+      <div class="font-medium">{{ po.origin|default:"—" }}</div></div>
+    <div><div class="text-xs text-slate-500 mb-0.5">Status</div>
+      <div>{% include "partials/badge.html" with status=po.status label=po.get_status_display %}</div></div>
+  </div>
+
+  <div class="px-6 pb-2">
+    <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Order Lines</div>
+    <div class="border border-slate-100 dark:border-slate-800 rounded-lg overflow-x-auto">
+      <table class="erp">
+        <thead><tr><th>Product</th><th class="text-right">Ordered</th><th class="text-right">Received</th>
+          <th class="text-right">Remaining</th><th class="text-right">Unit ₹</th><th class="text-right">Subtotal</th></tr></thead>
+        <tbody>{% for l in lines %}<tr>
+          <td class="font-medium">{{ l.product.name }}</td>
+          <td class="text-right">{{ l.quantity }}</td>
+          <td class="text-right text-slate-600">{{ l.received_qty }}</td>
+          <td class="text-right">{{ l.remaining }}</td>
+          <td class="text-right">{{ l.unit_price|floatformat:2 }}</td>
+          <td class="text-right font-medium">{{ l.subtotal|floatformat:2 }}</td>
+        </tr>{% empty %}<tr><td colspan="6" class="text-center text-slate-500 py-6">No order lines.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="px-6 py-5 flex justify-end">
+    <div class="w-full sm:w-72 space-y-1.5 text-sm">
+      <div class="flex justify-between text-slate-500"><span>Lines</span><span>{{ lines|length }}</span></div>
+      <div class="flex justify-between text-lg font-bold border-t border-slate-200 dark:border-slate-700 pt-2">
+        <span>Total</span><span class="text-slate-600">₹{{ po.total|floatformat:2 }}</span></div>
+    </div>
+  </div>
+</div>
 {% endblock %}
