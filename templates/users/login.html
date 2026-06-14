@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block auth %}
-<div class="min-h-screen grid place-items-center bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 p-4">
+<div class="min-h-screen grid place-items-center bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-4">
   <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8">
     <div class="flex items-center gap-2 mb-6">
-      <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 grid place-items-center">
+      <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-500 grid place-items-center">
         <svg class="h-6 w-6" viewBox="0 0 64 64" fill="none" stroke="white" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
           <path d="M32 12 L50 21 L32 30 L14 21 Z"/><path d="M14 21 V43 L32 52 V30"/><path d="M50 21 V43 L32 52"/></svg>
       </div>
@@ -21,7 +21,7 @@
       {% csrf_token %}
       <input name="username" placeholder="Username" class="inp" autofocus required>
       <input name="password" type="password" placeholder="Password" class="inp" required>
-      <button class="w-full rounded-md bg-violet-600 hover:bg-violet-700 text-white py-2.5 font-medium">Login</button>
+      <button class="w-full rounded-md bg-slate-600 hover:bg-slate-700 text-white py-2.5 font-medium">Login</button>
     </form>
     <div class="mt-5 text-xs text-slate-400 leading-relaxed">
       Demo: <b>admin / admin123</b> · sales / purchase / manufacturing / inventory / owner — pwd <b>demo1234</b>

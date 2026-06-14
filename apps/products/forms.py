@@ -23,3 +23,10 @@ class ProductForm(forms.ModelForm):
             if isinstance(field.widget, forms.CheckboxInput):
                 css = "h-4 w-4"
             field.widget.attrs.setdefault("class", css)
+        # BoM choices belong to THIS product only (empty for a brand-new product)
+        from apps.manufacturing.models import BoM
+        if self.instance and self.instance.pk:
+            self.fields["bom"].queryset = BoM.objects.filter(product=self.instance)
+        else:
+            self.fields["bom"].queryset = BoM.objects.none()
+        self.fields["bom"].empty_label = "— select after saving —"

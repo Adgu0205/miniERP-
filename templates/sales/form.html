@@ -1,15 +1,25 @@
 {% extends "base.html" %}
-{% block breadcrumb %}Sales / {% if so %}{{ so.reference }}{% else %}New{% endif %}{% endblock %}
+{% block breadcrumb %}Sales / {% if so %}{{ so.reference }} / Edit{% else %}New{% endif %}{% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">{% if so %}Edit{% else %}New{% endif %} Sales Order</h1>
-  <a href="{% url 'sales:list' %}" class="text-sm text-slate-500 hover:underline">← Back</a>
+  <h1 class="text-xl font-semibold">{% if so %}Edit Sales Order{% else %}New Sales Order{% endif %}</h1>
+  <a href="{% if so %}{% url 'sales:detail' so.pk %}{% else %}{% url 'sales:list' %}{% endif %}" class="btn btn-soft">← Back</a>
 </div>
-<form method="post" class="space-y-4" x-data>
+<form method="post" class="space-y-4">
   {% csrf_token %}
-  <div class="card p-5 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+  {% if so %}
+  <div class="card p-4 flex flex-wrap gap-6 text-sm">
+    <div><span class="text-xs text-slate-500">Reference</span><div class="font-semibold">{{ so.reference }}</div></div>
+    <div><span class="text-xs text-slate-500">Status</span><div>{% include "partials/badge.html" with status=so.status label=so.get_status_display %}</div></div>
+    <div><span class="text-xs text-slate-500">Order Date</span><div class="font-semibold">{{ so.order_date }}</div></div>
+    <div><span class="text-xs text-slate-500">Total</span><div class="font-semibold text-slate-600">₹{{ so.total|floatformat:2 }}</div></div>
+  </div>
+  {% endif %}
+
+  <div class="card p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
     {% for field in form %}
-    <div><label class="block text-xs font-medium text-slate-500 mb-1">{{ field.label }}</label>{{ field }}</div>
+    <div><label class="block text-xs font-medium text-slate-500 mb-1">{{ field.label }}</label>{{ field }}
+      {% if field.errors %}<p class="text-xs text-rose-500 mt-1">{{ field.errors|striptags }}</p>{% endif %}</div>
     {% endfor %}
   </div>
 
@@ -17,19 +27,22 @@
     <h3 class="font-semibold text-sm mb-3">Order Lines</h3>
     {{ formset.management_form }}
     <table class="erp">
-      <thead><tr><th>Product</th><th>Quantity</th><th>Unit Price ₹</th><th></th></tr></thead>
+      <thead><tr><th>Product</th><th>Quantity</th><th>Unit Price ₹</th><th class="text-center w-16">Remove</th></tr></thead>
       <tbody>
         {% for f in formset %}
         <tr>
           {% for h in f.hidden_fields %}{{ h }}{% endfor %}
           <td>{{ f.product }}</td><td>{{ f.quantity }}</td><td>{{ f.unit_price }}</td>
-          <td>{% if f.instance.pk %}{{ f.DELETE }}<span class="text-xs text-slate-400">del</span>{% endif %}</td>
+          <td class="text-center">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-    <p class="text-xs text-slate-400 mt-2">Tip: confirm the order after saving to reserve stock & auto-trigger procurement.</p>
+    <p class="text-xs text-slate-400 mt-2">Tip: confirm the order after saving to reserve stock &amp; auto-trigger procurement.</p>
   </div>
-  <button class="rounded-md bg-violet-600 hover:bg-violet-700 text-white text-sm px-5 py-2">Save</button>
+  <div class="flex gap-2">
+    <button class="btn btn-primary">Save</button>
+    <a href="{% if so %}{% url 'sales:detail' so.pk %}{% else %}{% url 'sales:list' %}{% endif %}" class="btn btn-soft">Cancel</a>
+  </div>
 </form>
 {% endblock %}

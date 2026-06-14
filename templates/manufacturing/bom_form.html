@@ -1,11 +1,62 @@
 {% extends "base.html" %}
-{% block breadcrumb %}BoM / {% if bom %}Edit{% else %}New{% endif %}{% endblock %}
+{% block breadcrumb %}Bill of Materials / {% if bom %}Edit{% else %}New{% endif %}{% endblock %}
 {% block content %}
-<h1 class="text-xl font-semibold mb-4">{% if bom %}Edit{% else %}New{% endif %} Bill of Materials</h1>
-<form method="post" class="card p-6 max-w-lg space-y-3">
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">{% if bom %}Edit{% else %}New{% endif %} Bill of Materials</h1>
+  <a href="{% url 'manufacturing:bom_list' %}" class="btn btn-soft">← Back</a>
+</div>
+
+<form method="post" class="space-y-5">
   {% csrf_token %}
-  {% for field in form %}<div><label class="block text-xs font-medium text-slate-500 mb-1">{{ field.label }}</label>{{ field }}</div>{% endfor %}
-  <button class="rounded-md bg-violet-600 text-white text-sm px-5 py-2">Save</button>
-  <p class="text-xs text-slate-400">After saving, add components & operations from the BoM detail / admin.</p>
+  <div class="card p-5 grid grid-cols-1 md:grid-cols-4 gap-4">
+    {% for field in form %}
+    <div class="{% if field.name == 'product' %}md:col-span-2{% endif %}">
+      <label class="block text-xs text-slate-500 mb-1">{{ field.label }}</label>{{ field }}
+      {% if field.errors %}<p class="text-xs text-rose-500 mt-1">{{ field.errors|striptags }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Components -->
+  <div class="card p-5">
+    <h3 class="font-semibold text-sm mb-3">Components</h3>
+    {{ lines.management_form }}
+    <table class="erp">
+      <thead><tr><th>Component</th><th>Quantity</th><th class="w-16">Remove</th></tr></thead>
+      <tbody>
+        {% for f in lines %}
+        <tr>
+          {% for h in f.hidden_fields %}{{ h }}{% endfor %}
+          <td>{{ f.component }}</td>
+          <td>{{ f.quantity }}</td>
+          <td class="text-center">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Operations -->
+  <div class="card p-5">
+    <h3 class="font-semibold text-sm mb-3">Operations (Work Orders)</h3>
+    {{ ops.management_form }}
+    <table class="erp">
+      <thead><tr><th class="w-20">Seq</th><th>Operation</th><th>Work Center</th><th>Duration (min)</th><th class="w-16">Remove</th></tr></thead>
+      <tbody>
+        {% for f in ops %}
+        <tr>
+          {% for h in f.hidden_fields %}{{ h }}{% endfor %}
+          <td>{{ f.sequence }}</td>
+          <td>{{ f.name }}</td>
+          <td>{{ f.work_center }}</td>
+          <td>{{ f.duration_mins }}</td>
+          <td class="text-center">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <button class="btn btn-primary">Save BoM</button>
 </form>
 {% endblock %}

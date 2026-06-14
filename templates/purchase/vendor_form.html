@@ -1,10 +1,22 @@
 {% extends "base.html" %}
-{% block breadcrumb %}Purchase / Vendors / Edit{% endblock %}
+{% block breadcrumb %}Purchase / Vendors / {% if form.instance.pk %}Edit{% else %}New{% endif %}{% endblock %}
 {% block content %}
-<h1 class="text-xl font-semibold mb-4">Vendor</h1>
-<form method="post" class="card p-6 max-w-lg space-y-3">
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">{% if form.instance.pk %}Edit{% else %}New{% endif %} Vendor</h1>
+  <a href="{% url 'purchase:vendors' %}" class="btn btn-soft">← Back to Vendors</a>
+</div>
+<form method="post" class="card p-6">
   {% csrf_token %}
-  {% for field in form %}<div><label class="block text-xs font-medium text-slate-500 mb-1">{{ field.label }}</label>{{ field }}</div>{% endfor %}
-  <button class="rounded-md bg-violet-600 text-white text-sm px-5 py-2">Save</button>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {% for field in form %}
+    <div class="{% if field.name == 'name' or field.name == 'address' %}md:col-span-2{% endif %}">
+      <label class="block text-xs font-medium text-slate-500 mb-1">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<p class="text-xs text-slate-400 mt-1">{{ field.help_text }}</p>{% endif %}
+      {% if field.errors %}<p class="text-xs text-rose-500 mt-1">{{ field.errors|striptags }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <button class="btn btn-primary mt-5">Save Vendor</button>
 </form>
 {% endblock %}

@@ -3,9 +3,11 @@
 {% block content %}
 <div class="flex items-center justify-between mb-4">
   <h1 class="text-xl font-semibold">BoM: {{ bom.product.name }} <span class="text-sm text-slate-500">(produces {{ bom.quantity }})</span></h1>
-  <a href="{% url 'manufacturing:bom_list' %}" class="text-sm text-slate-500 hover:underline">← Back</a>
+  <div class="flex gap-2">
+    <a href="{% url 'manufacturing:bom_edit' bom.pk %}" class="btn btn-primary">Edit Components & Operations</a>
+    <a href="{% url 'manufacturing:bom_list' %}" class="btn btn-soft">← Back</a>
+  </div>
 </div>
-<p class="text-xs text-slate-500 mb-3">Edit components & operations via the <a href="/admin/manufacturing/bom/{{ bom.pk }}/change/" class="text-violet-600 underline">admin</a> (inline rows).</p>
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
   <div class="card p-5">
     <h3 class="font-semibold text-sm mb-3">Components</h3>

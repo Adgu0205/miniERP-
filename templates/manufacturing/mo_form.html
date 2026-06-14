@@ -1,15 +1,28 @@
 {% extends "base.html" %}
-{% block breadcrumb %}Manufacturing / {% if mo %}{{ mo.reference }}{% else %}New{% endif %}{% endblock %}
+{% block breadcrumb %}Manufacturing / {% if mo %}{{ mo.reference }} / Edit{% else %}New{% endif %}{% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">{% if mo %}Edit{% else %}New{% endif %} Manufacturing Order</h1>
-  <a href="{% url 'manufacturing:list' %}" class="text-sm text-slate-500 hover:underline">← Back</a>
+  <h1 class="text-xl font-semibold">{% if mo %}Edit Manufacturing Order{% else %}New Manufacturing Order{% endif %}</h1>
+  <a href="{% if mo %}{% url 'manufacturing:detail' mo.pk %}{% else %}{% url 'manufacturing:list' %}{% endif %}" class="btn btn-soft">← Back</a>
 </div>
-<form method="post" class="card p-6 max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-4">
+<form method="post" class="space-y-4">
   {% csrf_token %}
-  {% for field in form %}
-  <div><label class="block text-xs font-medium text-slate-500 mb-1">{{ field.label }}</label>{{ field }}</div>
-  {% endfor %}
-  <div class="md:col-span-2"><button class="rounded-md bg-violet-600 text-white text-sm px-5 py-2">Save</button></div>
+  {% if mo %}
+  <div class="card p-4 flex flex-wrap gap-6 text-sm">
+    <div><span class="text-xs text-slate-500">Reference</span><div class="font-semibold">{{ mo.reference }}</div></div>
+    <div><span class="text-xs text-slate-500">Status</span><div>{% include "partials/badge.html" with status=mo.status label=mo.get_status_display %}</div></div>
+    {% if mo.origin %}<div><span class="text-xs text-slate-500">Origin</span><div class="font-semibold text-slate-600">{{ mo.origin }}</div></div>{% endif %}
+  </div>
+  {% endif %}
+  <div class="card p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+    {% for field in form %}
+    <div><label class="block text-xs font-medium text-slate-500 mb-1">{{ field.label }}</label>{{ field }}
+      {% if field.errors %}<p class="text-xs text-rose-500 mt-1">{{ field.errors|striptags }}</p>{% endif %}</div>
+    {% endfor %}
+  </div>
+  <div class="flex gap-2">
+    <button class="btn btn-primary">Save</button>
+    <a href="{% if mo %}{% url 'manufacturing:detail' mo.pk %}{% else %}{% url 'manufacturing:list' %}{% endif %}" class="btn btn-soft">Cancel</a>
+  </div>
 </form>
 {% endblock %}
