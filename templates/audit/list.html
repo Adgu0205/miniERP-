@@ -1,29 +1,70 @@
 {% extends "base.html" %}
 {% block breadcrumb %}Audit Logs{% endblock %}
 {% block content %}
-<h1 class="text-xl font-semibold mb-4">Audit Logs</h1>
-<form class="flex flex-wrap gap-2 mb-3 text-sm">
-  <select name="module" class="inp max-w-xs" onchange="this.form.submit()">
-    <option value="">All modules</option>
-    {% for m in modules %}<option value="{{ m }}" {% if sel_module == m %}selected{% endif %}>{{ m|title }}</option>{% endfor %}
-  </select>
-  <select name="action" class="inp max-w-xs" onchange="this.form.submit()">
-    <option value="">All actions</option>
-    {% for code, label in actions %}<option value="{{ code }}" {% if sel_action == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
-  </select>
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h1 class="text-xl font-semibold">Audit Logs</h1>
+    <p class="text-xs text-slate-500">Full traceability — every status, stock, price and delivery change.</p>
+  </div>
+</div>
+
+<!-- Summary cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+  {% for c in cards %}
+  <div class="card p-4">
+    <div class="text-xs text-slate-500">{{ c.label }}</div>
+    <div class="text-2xl font-bold mt-1 text-{{ c.color }}-500">{{ c.value }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Filters -->
+<form class="card p-3 mb-4 grid grid-cols-2 md:grid-cols-6 gap-2 items-end text-sm">
+  <div><label class="block text-xs text-slate-500 mb-1">Module</label>
+    <select name="module" class="inp">
+      <option value="">All</option>
+      {% for m in modules %}<option value="{{ m }}" {% if sel_module == m %}selected{% endif %}>{{ m|title }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label class="block text-xs text-slate-500 mb-1">Type</label>
+    <select name="action" class="inp">
+      <option value="">All</option>
+      {% for code, label in actions %}<option value="{{ code }}" {% if sel_action == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label class="block text-xs text-slate-500 mb-1">Record</label>
+    <input name="ref" value="{{ ref }}" placeholder="e.g. SO00007" class="inp"></div>
+  <div><label class="block text-xs text-slate-500 mb-1">From</label>
+    <input type="date" name="from" value="{{ date_from }}" class="inp"></div>
+  <div><label class="block text-xs text-slate-500 mb-1">To</label>
+    <input type="date" name="to" value="{{ date_to }}" class="inp"></div>
+  <div class="flex gap-2">
+    <button class="btn btn-primary flex-1">Filter</button>
+    <a href="{% url 'audit:list' %}" class="btn btn-soft">Reset</a>
+  </div>
 </form>
+
 <div class="card overflow-x-auto"><table class="erp">
-  <thead><tr><th>When</th><th>Module</th><th>Action</th><th>Object</th><th>Field</th><th>Change</th><th>Description</th><th>User</th></tr></thead>
+  <thead><tr><th>Date / Time</th><th>User</th><th>Module</th><th>Type</th><th>Record</th><th>Field</th><th>Old → New</th><th>Description</th></tr></thead>
   <tbody>{% for l in page %}<tr>
-    <td class="text-slate-500 whitespace-nowrap">{{ l.timestamp|date:"d M H:i:s" }}</td>
-    <td class="text-xs"><span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800">{{ l.module }}</span></td>
-    <td>{{ l.get_action_display }}</td>
-    <td class="text-xs">{{ l.object_ref }}</td>
-    <td class="text-xs text-slate-500">{{ l.field }}</td>
-    <td class="text-xs">{% if l.old_value or l.new_value %}{{ l.old_value }} → {{ l.new_value }}{% endif %}</td>
+    <td class="text-slate-500 whitespace-nowrap">{{ l.timestamp|date:"d M Y H:i:s" }}</td>
+    <td>{{ l.user.username|default:"system" }}</td>
+    <td><span class="chip bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ l.module }}</span></td>
+    <td>
+      <span class="chip
+        {% if l.action == 'status' %}bg-slate-100 text-slate-700
+        {% elif l.action == 'stock' %}bg-slate-100 text-slate-700
+        {% elif l.action == 'price' %}bg-slate-100 text-slate-700
+        {% elif l.action == 'procurement' %}bg-slate-100 text-slate-700
+        {% elif l.action == 'delivery' %}bg-slate-100 text-slate-700
+        {% elif l.action == 'create' %}bg-slate-100 text-slate-700
+        {% else %}bg-slate-100 text-slate-600{% endif %}">{{ l.get_action_display }}</span>
+    </td>
+    <td class="text-xs font-medium">{{ l.object_ref }}</td>
+    <td class="text-xs text-slate-500">{{ l.field|default:"—" }}</td>
+    <td class="text-xs">{% if l.old_value or l.new_value %}<span class="text-rose-500">{{ l.old_value|default:"∅" }}</span> → <span class="text-slate-600">{{ l.new_value }}</span>{% else %}—{% endif %}</td>
     <td class="text-xs text-slate-500">{{ l.description }}</td>
-    <td class="text-xs">{{ l.user.username|default:"system" }}</td>
-  </tr>{% empty %}<tr><td colspan="8" class="text-center text-slate-500 py-8">No audit entries.</td></tr>{% endfor %}</tbody>
+  </tr>{% empty %}<tr><td colspan="8" class="text-center text-slate-500 py-10">No audit entries match.</td></tr>{% endfor %}</tbody>
 </table></div>
 {% include "partials/pagination.html" %}
 {% endblock %}
