@@ -37,7 +37,7 @@
           <a href="{% url 'manufacturing:detail' mo.pk %}" class="font-medium text-sm text-slate-600 hover:underline">{{ mo.reference }}</a>
           {% if mo.is_delayed %}<span class="text-xs text-rose-500">⚠</span>{% endif %}
         </div>
-        <div class="text-xs text-slate-500 truncate">{{ mo.quantity }} × {{ mo.product.name }}</div>
+        <div class="text-xs text-slate-500 truncate">{{ mo.quantity|floatformat:0 }} × {{ mo.product.name }}</div>
         {% if mo.origin %}<div class="text-[10px] text-slate-500 mt-0.5">{{ mo.origin }}</div>{% endif %}
       </div>
       {% endfor %}
@@ -82,7 +82,7 @@
   <tbody>{% for mo in orders %}<tr class="linkrow" onclick="location.href='{% url 'manufacturing:detail' mo.pk %}'">
     <td><span class="font-medium">{{ mo.reference }}</span></td>
     <td>{{ mo.product.name }}</td>
-    <td class="text-right">{{ mo.quantity }}</td>
+    <td class="text-right">{{ mo.quantity|floatformat:0 }}</td>
     <td>{{ mo.assignee.username|default:"—" }}</td>
     <td class="{% if mo.is_delayed %}text-rose-500 font-medium{% endif %}">{{ mo.deadline|default:"—" }}</td>
     <td class="text-xs text-slate-500">{{ mo.origin|default:"—" }}</td>

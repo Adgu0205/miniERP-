@@ -9,7 +9,7 @@ Simple, explainable moving-average model over recent sales. For each product:
 No external ML deps — fast, deterministic, demo-friendly, and easy to defend.
 """
 from datetime import timedelta
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db.models import DecimalField, Sum
 from django.db.models.functions import Coalesce
@@ -35,7 +35,8 @@ def _sold_map(window=WINDOW_DAYS):
 def forecast_product(product, sold_qty, window=WINDOW_DAYS):
     avg_daily = (sold_qty or Decimal("0")) / Decimal(window)
     lead = product.lead_time_days
-    predicted_30 = (avg_daily * 30).quantize(Decimal("0.1"))
+    # Demand is a count of whole units (you can't make half a chair) -> round.
+    predicted_30 = (avg_daily * 30).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
     demand_lead = avg_daily * Decimal(lead)
     target = demand_lead + product.reorder_point
     suggested = target - product.free_to_use

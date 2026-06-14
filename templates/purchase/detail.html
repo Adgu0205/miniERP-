@@ -46,8 +46,8 @@
           <th class="text-right">Remaining</th><th class="text-right">Unit ₹</th><th class="text-right">Subtotal</th></tr></thead>
         <tbody>{% for l in lines %}<tr>
           <td class="font-medium">{{ l.product.name }}</td>
-          <td class="text-right">{{ l.quantity }}</td>
-          <td class="text-right text-slate-600">{{ l.received_qty }}</td>
+          <td class="text-right">{{ l.quantity|floatformat:0 }}</td>
+          <td class="text-right text-slate-600">{{ l.received_qty|floatformat:0 }}</td>
           <td class="text-right">{{ l.remaining }}</td>
           <td class="text-right">{{ l.unit_price|floatformat:2 }}</td>
           <td class="text-right font-medium">{{ l.subtotal|floatformat:2 }}</td>

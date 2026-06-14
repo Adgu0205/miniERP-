@@ -16,7 +16,7 @@
   <tbody>{% for b in boms %}<tr class="linkrow" onclick="location.href='{% url 'manufacturing:bom_detail' b.pk %}'">
     <td><span class="font-medium">{{ b.product.name }}</span></td>
     <td>{{ b.name|default:"—" }}</td>
-    <td class="text-right">{{ b.quantity }}</td>
+    <td class="text-right">{{ b.quantity|floatformat:0 }}</td>
     <td class="text-right">{{ b.lines.count }}</td>
     <td class="text-right">{{ b.component_cost|floatformat:2 }}</td>
     <td class="text-center">{% if b.is_active %}<span class="chip bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300">Active</span>{% else %}<span class="chip bg-slate-100 text-slate-500 dark:bg-slate-800">Inactive</span>{% endif %}</td>

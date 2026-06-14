@@ -23,14 +23,14 @@
     <th class="text-right">Suggested</th><th>Action</th></tr></thead>
     <tbody>{% for f in forecasts %}<tr>
       <td class="font-medium">{{ f.product.name }}</td>
-      <td class="text-right">{{ f.avg_daily }}</td>
-      <td class="text-right">{{ f.predicted_30 }}</td>
-      <td class="text-right {% if f.free <= 0 %}text-rose-500{% endif %}">{{ f.free }}</td>
+      <td class="text-right">{{ f.avg_daily|floatformat:1 }}</td>
+      <td class="text-right">{{ f.predicted_30|floatformat:0 }}</td>
+      <td class="text-right {% if f.free <= 0 %}text-rose-500{% endif %}">{{ f.free|floatformat:0 }}</td>
       <td class="text-right {% if f.days_cover != None and f.days_cover <= f.lead_days %}text-slate-600 font-semibold{% endif %}">{{ f.days_cover|default:"—" }}</td>
       <td class="text-right">{{ f.lead_days }}d</td>
-      <td class="text-right font-semibold text-slate-600">{{ f.suggested }}</td>
+      <td class="text-right font-semibold text-slate-600">{{ f.suggested|floatformat:0 }}</td>
       <td><a href="{% url 'procurement:replenish' f.product.pk %}" class="text-xs px-2.5 py-1 rounded-md text-white {% if f.action == 'manufacture' %}bg-slate-600{% else %}bg-slate-600{% endif %}">
-        {% if f.action == 'manufacture' %}Make{% else %}Buy{% endif %} {{ f.suggested }}</a></td>
+        {% if f.action == 'manufacture' %}Make{% else %}Buy{% endif %} {{ f.suggested|floatformat:0 }}</a></td>
     </tr>{% endfor %}</tbody>
   </table>
   {% else %}<p class="text-sm text-slate-600">No replenishment suggested — stock covers forecast demand. ✅</p>{% endif %}

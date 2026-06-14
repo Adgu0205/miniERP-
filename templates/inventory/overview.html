@@ -25,9 +25,9 @@
     <th class="text-right">Free to Use</th><th class="text-right">Stock Value ₹</th></tr></thead>
   <tbody>{% for p in products %}<tr>
     <td class="font-medium">{{ p.name }}</td><td class="text-slate-500">{{ p.sku }}</td>
-    <td class="text-right">{{ p.on_hand }}</td>
-    <td class="text-right text-slate-600">{{ p.reserved }}</td>
-    <td class="text-right font-semibold {% if p.free_to_use <= 0 %}text-rose-500{% else %}text-slate-600{% endif %}">{{ p.free_to_use }}</td>
+    <td class="text-right">{{ p.on_hand|floatformat:0 }}</td>
+    <td class="text-right text-slate-600">{{ p.reserved|floatformat:0 }}</td>
+    <td class="text-right font-semibold {% if p.free_to_use <= 0 %}text-rose-500{% else %}text-slate-600{% endif %}">{{ p.free_to_use|floatformat:0 }}</td>
     <td class="text-right">{{ p.stock_value|floatformat:2 }}</td>
   </tr>{% empty %}<tr><td colspan="6" class="text-center text-slate-500 py-10">No products.</td></tr>{% endfor %}</tbody>
 </table></div>

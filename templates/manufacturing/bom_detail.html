@@ -2,7 +2,7 @@
 {% block breadcrumb %}BoM / {{ bom.product.name }}{% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">BoM: {{ bom.product.name }} <span class="text-sm text-slate-500">(produces {{ bom.quantity }})</span></h1>
+  <h1 class="text-xl font-semibold">BoM: {{ bom.product.name }} <span class="text-sm text-slate-500">(produces {{ bom.quantity|floatformat:0 }})</span></h1>
   <div class="flex gap-2">
     <a href="{% url 'manufacturing:bom_edit' bom.pk %}" class="btn btn-primary">Edit Components & Operations</a>
     <a href="{% url 'manufacturing:bom_list' %}" class="btn btn-soft">← Back</a>
@@ -12,7 +12,7 @@
   <div class="card p-5">
     <h3 class="font-semibold text-sm mb-3">Components</h3>
     <table class="erp"><thead><tr><th>Component</th><th class="text-right">Qty</th><th class="text-right">Line Cost ₹</th></tr></thead>
-      <tbody>{% for l in bom.lines.all %}<tr><td>{{ l.component.name }}</td><td class="text-right">{{ l.quantity }}</td><td class="text-right">{{ l.line_cost }}</td></tr>
+      <tbody>{% for l in bom.lines.all %}<tr><td>{{ l.component.name }}</td><td class="text-right">{{ l.quantity|floatformat:0 }}</td><td class="text-right">{{ l.line_cost }}</td></tr>
       {% empty %}<tr><td colspan="3" class="text-slate-500 py-4 text-center">No components.</td></tr>{% endfor %}</tbody>
       <tfoot><tr class="font-semibold"><td colspan="2" class="text-right">Total Cost</td><td class="text-right">₹{{ bom.component_cost }}</td></tr></tfoot>
     </table>

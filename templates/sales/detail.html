@@ -57,9 +57,9 @@
           {% for row in availability %}
           <tr>
             <td class="font-medium">{{ row.line.product.name }}</td>
-            <td class="text-right">{{ row.line.quantity }}</td>
-            <td class="text-right">{{ row.line.delivered_qty }}</td>
-            <td class="text-right {% if row.free <= 0 %}text-rose-500{% else %}text-slate-600{% endif %}">{{ row.free }}</td>
+            <td class="text-right">{{ row.line.quantity|floatformat:0 }}</td>
+            <td class="text-right">{{ row.line.delivered_qty|floatformat:0 }}</td>
+            <td class="text-right {% if row.free <= 0 %}text-rose-500{% else %}text-slate-600{% endif %}">{{ row.free|floatformat:0 }}</td>
             <td class="text-right {% if row.shortage > 0 %}text-slate-600 font-semibold{% endif %}">{{ row.shortage }}</td>
             <td class="text-right">{{ row.line.unit_price|floatformat:2 }}</td>
             <td class="text-right font-medium">{{ row.line.subtotal|floatformat:2 }}</td>

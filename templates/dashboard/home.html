@@ -64,7 +64,7 @@
         <ul class="text-sm divide-y divide-slate-100 dark:divide-slate-800">
           {% for p in low_stock %}
           <li class="py-2 flex justify-between"><span>{{ p.name }}</span>
-            <span class="text-rose-500 font-semibold">{{ p.free_to_use }}</span></li>
+            <span class="text-rose-500 font-semibold">{{ p.free_to_use|floatformat:0 }}</span></li>
           {% endfor %}
         </ul>
         {% else %}<p class="text-sm text-slate-600">All products in stock ✅</p>{% endif %}
@@ -141,7 +141,7 @@
         <ul class="text-sm divide-y divide-slate-100 dark:divide-slate-800">
           {% for p in low_stock %}
           <li class="py-2 flex justify-between"><span>{{ p.name }}</span>
-            <span class="text-rose-500 font-semibold">{{ p.free_to_use }}</span></li>
+            <span class="text-rose-500 font-semibold">{{ p.free_to_use|floatformat:0 }}</span></li>
           {% endfor %}
         </ul>
         {% else %}<p class="text-sm text-slate-600">All products in stock ✅</p>{% endif %}

@@ -34,7 +34,7 @@
     <div><div class="text-xs text-slate-500 mb-0.5">Finished Product</div>
       <div class="font-medium">{{ mo.product.name }}</div></div>
     <div><div class="text-xs text-slate-500 mb-0.5">Quantity</div>
-      <div class="font-medium">{{ mo.quantity }}</div></div>
+      <div class="font-medium">{{ mo.quantity|floatformat:0 }}</div></div>
     <div><div class="text-xs text-slate-500 mb-0.5">Bill of Materials</div>
       <div class="font-medium">{{ mo.bom|default:"—" }}</div></div>
     <div><div class="text-xs text-slate-500 mb-0.5">Assignee</div>
@@ -55,7 +55,7 @@
       <table class="erp"><thead><tr><th>Component</th><th class="text-right">Needed</th><th class="text-right">Free Stock</th></tr></thead>
         <tbody>{% for comp, qty in requirements %}<tr>
           <td>{{ comp.name }}</td><td class="text-right">{{ qty }}</td>
-          <td class="text-right {% if comp.free_to_use < qty %}text-rose-500{% else %}text-slate-600{% endif %}">{{ comp.free_to_use }}</td>
+          <td class="text-right {% if comp.free_to_use < qty %}text-rose-500{% else %}text-slate-600{% endif %}">{{ comp.free_to_use|floatformat:0 }}</td>
         </tr>{% empty %}<tr><td colspan="3" class="text-slate-500 py-4 text-center">No BoM linked.</td></tr>{% endfor %}</tbody>
       </table>
     </div>

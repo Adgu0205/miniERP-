@@ -27,7 +27,7 @@
     <td class="text-slate-500 whitespace-nowrap">{{ e.created_at|date:"d M Y H:i" }}</td>
     <td class="font-medium">{{ e.product.name }}</td>
     <td>{{ e.get_movement_type_display }}</td>
-    <td class="text-right font-semibold {% if e.quantity < 0 %}text-rose-500{% else %}text-slate-600{% endif %}">{{ e.quantity }}</td>
+    <td class="text-right font-semibold {% if e.quantity < 0 %}text-rose-500{% else %}text-slate-600{% endif %}">{{ e.quantity|floatformat:0 }}</td>
     <td class="text-right">{{ e.balance_after }}</td>
     <td class="text-xs text-slate-500">{{ e.reference }}</td>
     <td class="text-xs text-slate-500">{{ e.created_by.username|default:"system" }}</td>
