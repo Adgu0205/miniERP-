@@ -22,14 +22,14 @@
 
   <!-- KPI tiles: always visible -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-    {% include "dashboard/_tile.html" with id="revenue" label="Revenue (30d)" value=m.revenue prefix="₹" delta=m.revenue_delta color="blue" %}
-    {% include "dashboard/_tile.html" with id="total_sales" label="Sales Orders" value=m.total_sales delta=m.sales_delta color="blue" %}
-    {% include "dashboard/_tile.html" with id="pending" label="Pending Deliveries" value=m.pending_deliveries color="slate" %}
-    {% include "dashboard/_tile.html" with id="mfg" label="Open Mfg Orders" value=m.mfg_orders color="teal" %}
-    {% include "dashboard/_tile.html" with id="delayed" label="Delayed Orders" value=m.delayed_orders color="rose" %}
-    {% include "dashboard/_tile.html" with id="po" label="Purchase Orders" value=m.purchase_orders color="slate" %}
-    {% include "dashboard/_tile.html" with id="invval" label="Inventory Value" value=m.inventory_value prefix="₹" color="teal" %}
-    {% include "dashboard/_tile.html" with id="fulfil" label="Fulfilment Rate" value=m.fulfilment suffix="%" color="teal" %}
+    {% include "dashboard/_tile.html" with label="Revenue (30d)" value=m.revenue prefix="₹" delta=m.revenue_delta color="blue" url="/sales/" %}
+    {% include "dashboard/_tile.html" with label="Sales Orders" value=m.total_sales delta=m.sales_delta color="blue" url="/sales/" %}
+    {% include "dashboard/_tile.html" with label="Pending Deliveries" value=m.pending_deliveries delta="" color="slate" url="/sales/?status=confirmed" %}
+    {% include "dashboard/_tile.html" with label="Open Mfg Orders" value=m.mfg_orders delta=m.mfg_delta color="teal" url="/manufacturing/" %}
+    {% include "dashboard/_tile.html" with label="Delayed Orders" value=m.delayed_orders delta="" color="rose" url="/sales/" %}
+    {% include "dashboard/_tile.html" with label="Purchase Orders" value=m.purchase_orders delta=m.purchase_delta color="slate" url="/purchase/" %}
+    {% include "dashboard/_tile.html" with label="Inventory Value" value=m.inventory_value prefix="₹" delta="" color="teal" url="/inventory/" %}
+    {% include "dashboard/_tile.html" with label="Fulfilment Rate" value=m.fulfilment suffix="%" delta="" color="teal" url="/sales/?status=delivered" %}
   </div>
 
   <!-- Tab bar -->
@@ -126,9 +126,9 @@
   <!-- ===== Inventory ===== -->
   <div x-show="tab==='inventory'" data-tab="inventory" class="space-y-5" x-cloak>
     <div class="card p-5">
-      <h3 class="font-semibold text-sm mb-1">Material Flow Across the Business</h3>
-      <p class="text-xs text-slate-400 mb-3">Purchases → Warehouse → Manufacturing → Finished Goods → Customers · units moved.</p>
-      <div class="h-80"><canvas data-chart="sankey"></canvas></div>
+      <h3 class="font-semibold text-sm mb-1">Material Flow (units moved)</h3>
+      <p class="text-xs text-slate-400 mb-3">How stock moved through each stage of the business.</p>
+      <div class="h-72"><canvas data-chart="flow"></canvas></div>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <div class="card p-5">
@@ -152,7 +152,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/chartjs-chart-sankey@0.14.0/dist/chartjs-chart-sankey.min.js"></script>
 <script>
 function dash(){
   return {
@@ -192,7 +191,6 @@ function dash(){
       if(this.charts[key]){ if(!force) return; this.charts[key].destroy(); }
       this.charts[key]=new Chart(el,cfg);
     },
-    sankeyReady(){ try{ return !!(window.Chart && Chart.registry.controllers.get('sankey')); }catch(e){ return false; } },
     render(key,force){ try{ this._render(key,force); }catch(e){ console.warn('chart '+key+' skipped:', e.message); } },
     _render(key,force){
       if(!this.data) return;
@@ -216,27 +214,19 @@ function dash(){
           options:{plugins:{legend:{display:false}},scales:cartesian()}},force);
       if(key==='procurement') this.mk(key,{type:'doughnut',data:{labels:['Purchase','Manufacture'],datasets:[{data:[d.procurement.buy,d.procurement.manufacture],backgroundColor:['#2b5fa6','#0f766e'],borderWidth:0}]},
           options:{cutout:'58%',plugins:{legend:{position:'bottom',labels:{color:t,boxWidth:10}}}}},force);
-      if(key==='sankey'){
-        if(this.sankeyReady())
-          this.mk(key,{type:'sankey',data:{datasets:[{data:d.sankey,borderWidth:0,
-            colorFrom:c=>P[c.dataIndex%P.length],colorTo:c=>P[(c.dataIndex+2)%P.length],
-            colorMode:'gradient'}]},options:{animation:false,plugins:{legend:{display:false}}}},force);
-        else this.renderSankeyFallback(d.sankey);
-      }
+      if(key==='flow') this.mk(key,{type:'bar',
+          data:{labels:d.sankey.map(f=>f.from+' → '+f.to),
+                datasets:[{label:'Units',data:d.sankey.map(f=>f.flow),
+                  backgroundColor:['#2b5fa6','#0f766e','#6366f1','#0ea5e9','#10b981'],borderRadius:5}]},
+          options:{indexAxis:'y',plugins:{legend:{display:false},
+            tooltip:{callbacks:{label:c=>c.parsed.x.toLocaleString('en-IN')+' units'}}},
+            scales:{x:{ticks:{color:t},grid:{color:g},beginAtZero:true},y:{ticks:{color:t,font:{size:11}},grid:{display:false}}}}},force);
     },
     renderTop(force){
       if(!this.data)return; const d=this.data,t=this.tick(),g=this.grid();
       const vals=this.topMetric==='qty'?d.top_products.qty:d.top_products.revenue;
       this.mk('top',{type:'bar',data:{labels:d.top_products.labels,datasets:[{label:this.topMetric,data:vals,backgroundColor:'#2b5fa6',borderRadius:5}]},
         options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:t},grid:{color:g},beginAtZero:true},y:{ticks:{color:t},grid:{display:false}}}}},true);
-    },
-    renderSankeyFallback(flows){
-      const el=document.querySelector('[data-chart="sankey"]'); if(!el)return;
-      el.style.display='none';
-      let wrap=el.parentNode.querySelector('.sankey-fb');
-      if(!wrap){ wrap=document.createElement('div'); wrap.className='sankey-fb space-y-3 pt-1'; el.parentNode.insertBefore(wrap, el); }
-      const max=Math.max(...flows.map(f=>f.flow),1);
-      wrap.innerHTML=flows.map(f=>`<div><div class="flex justify-between text-xs text-slate-500 mb-1"><span>${f.from} <span class="text-slate-400">→</span> ${f.to}</span><span class="font-semibold tabular-nums">${f.flow.toLocaleString('en-IN')}</span></div><div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-slate-500 to-slate-500 transition-all duration-700" style="width:${Math.max(f.flow/max*100,4)}%"></div></div></div>`).join('');
     },
   }
 }
