@@ -9,11 +9,11 @@
     <div>
       <h1 class="text-xl font-semibold">Executive Dashboard</h1>
       <p class="text-xs text-slate-500">Live operational intelligence · last 30 days
-        <span x-show="loading" class="text-violet-500">· refreshing…</span></p>
+        <span x-show="loading" class="text-slate-500">· refreshing…</span></p>
     </div>
     <div class="flex items-center gap-2">
       <span class="text-xs text-slate-400" x-text="updated"></span>
-      <button @click="refresh()" class="text-sm px-3 py-1.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-1">
+      <button @click="refresh()" class="text-sm px-3 py-1.5 rounded-md bg-slate-600 hover:bg-slate-700 text-white flex items-center gap-1">
         <svg class="h-4 w-4" :class="loading && 'animate-spin'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6M20 8a8 8 0 00-14.3-3M4 16a8 8 0 0014.3 3"/></svg>
         Refresh
       </button>
@@ -22,13 +22,13 @@
 
   <!-- KPI tiles: always visible -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-    {% include "dashboard/_tile.html" with id="revenue" label="Revenue (30d)" value=m.revenue prefix="₹" delta=m.revenue_delta color="violet" %}
-    {% include "dashboard/_tile.html" with id="total_sales" label="Sales Orders" value=m.total_sales delta=m.sales_delta color="sky" %}
-    {% include "dashboard/_tile.html" with id="pending" label="Pending Deliveries" value=m.pending_deliveries color="amber" %}
-    {% include "dashboard/_tile.html" with id="mfg" label="Open Mfg Orders" value=m.mfg_orders color="indigo" %}
+    {% include "dashboard/_tile.html" with id="revenue" label="Revenue (30d)" value=m.revenue prefix="₹" delta=m.revenue_delta color="blue" %}
+    {% include "dashboard/_tile.html" with id="total_sales" label="Sales Orders" value=m.total_sales delta=m.sales_delta color="blue" %}
+    {% include "dashboard/_tile.html" with id="pending" label="Pending Deliveries" value=m.pending_deliveries color="slate" %}
+    {% include "dashboard/_tile.html" with id="mfg" label="Open Mfg Orders" value=m.mfg_orders color="teal" %}
     {% include "dashboard/_tile.html" with id="delayed" label="Delayed Orders" value=m.delayed_orders color="rose" %}
-    {% include "dashboard/_tile.html" with id="po" label="Purchase Orders" value=m.purchase_orders color="emerald" %}
-    {% include "dashboard/_tile.html" with id="invval" label="Inventory Value" value=m.inventory_value prefix="₹" color="fuchsia" %}
+    {% include "dashboard/_tile.html" with id="po" label="Purchase Orders" value=m.purchase_orders color="slate" %}
+    {% include "dashboard/_tile.html" with id="invval" label="Inventory Value" value=m.inventory_value prefix="₹" color="teal" %}
     {% include "dashboard/_tile.html" with id="fulfil" label="Fulfilment Rate" value=m.fulfilment suffix="%" color="teal" %}
   </div>
 
@@ -37,7 +37,7 @@
     <template x-for="t in tabs" :key="t.id">
       <button @click="setTab(t.id)"
         class="px-4 py-2.5 text-sm whitespace-nowrap border-b-2 -mb-px transition"
-        :class="tab===t.id ? 'border-violet-500 text-violet-600 font-medium' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+        :class="tab===t.id ? 'border-blue-600 text-blue-700 dark:text-blue-300 font-medium' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
         x-text="t.label"></button>
     </template>
   </div>
@@ -67,14 +67,14 @@
             <span class="text-rose-500 font-semibold">{{ p.free_to_use }}</span></li>
           {% endfor %}
         </ul>
-        {% else %}<p class="text-sm text-emerald-600">All products in stock ✅</p>{% endif %}
+        {% else %}<p class="text-sm text-slate-600">All products in stock ✅</p>{% endif %}
       </div>
       <div class="card p-5">
         <h3 class="font-semibold text-sm mb-3">Recent Sales Orders</h3>
         <ul class="text-sm divide-y divide-slate-100 dark:divide-slate-800">
           {% for so in recent_so %}
           <li class="py-2 flex justify-between items-center gap-2">
-            <a href="{% url 'sales:detail' so.pk %}" class="text-violet-600 hover:underline">{{ so.reference }}</a>
+            <a href="{% url 'sales:detail' so.pk %}" class="text-slate-600 hover:underline">{{ so.reference }}</a>
             <span class="text-xs text-slate-500 flex-1 truncate">{{ so.customer.name|default:"—"|truncatechars:18 }}</span>
             {% include "partials/badge.html" with status=so.status label=so.get_status_display %}
           </li>
@@ -144,7 +144,7 @@
             <span class="text-rose-500 font-semibold">{{ p.free_to_use }}</span></li>
           {% endfor %}
         </ul>
-        {% else %}<p class="text-sm text-emerald-600">All products in stock ✅</p>{% endif %}
+        {% else %}<p class="text-sm text-slate-600">All products in stock ✅</p>{% endif %}
       </div>
     </div>
   </div>
@@ -185,7 +185,7 @@ function dash(){
     },
     tick(){ return document.documentElement.classList.contains('dark')?'#94a3b8':'#475569'; },
     grid(){ return document.documentElement.classList.contains('dark')?'rgba(148,163,184,.12)':'rgba(100,116,139,.12)'; },
-    palette:['#8b5cf6','#ec4899','#0ea5e9','#10b981','#f59e0b','#ef4444','#6366f1','#14b8a6'],
+    palette:['#2b5fa6','#0f766e','#f59e0b','#6366f1','#ef4444','#10b981','#0ea5e9','#a855f7'],
     mk(key,cfg,force){
       const el=document.querySelector(`[data-chart="${key}"]`);
       if(!el || el.tagName!=='CANVAS' || typeof el.getContext!=='function' || !el.getContext('2d')) return;
@@ -199,8 +199,8 @@ function dash(){
       const d=this.data, t=this.tick(), g=this.grid(), P=this.palette;
       const cartesian=(extra={})=>({x:{ticks:{color:t},grid:{color:g}},y:{ticks:{color:t},grid:{color:g},beginAtZero:true},...extra});
       if(key==='trend') this.mk(key,{type:'bar',data:{labels:d.trend.labels,datasets:[
-          {type:'line',label:'Revenue ₹',data:d.trend.revenue,yAxisID:'y',borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,.15)',fill:true,tension:.35,pointRadius:0},
-          {type:'bar',label:'Orders',data:d.trend.orders,yAxisID:'y1',backgroundColor:'rgba(14,165,233,.55)',borderRadius:4}]},
+          {type:'line',label:'Revenue ₹',data:d.trend.revenue,yAxisID:'y',borderColor:'#2b5fa6',backgroundColor:'rgba(43,95,166,.12)',fill:true,tension:.35,pointRadius:0},
+          {type:'bar',label:'Orders',data:d.trend.orders,yAxisID:'y1',backgroundColor:'rgba(15,118,110,.5)',borderRadius:4}]},
           options:{interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:t,boxWidth:12}}},
           scales:{x:{ticks:{color:t,maxTicksLimit:10},grid:{color:g}},
             y:{position:'left',ticks:{color:t},grid:{color:g},beginAtZero:true},
@@ -208,13 +208,13 @@ function dash(){
       if(key==='inventory'||key==='inventory2') this.mk(key,{type:'doughnut',data:{labels:d.inventory.labels,datasets:[{data:d.inventory.values,backgroundColor:P,borderWidth:0}]},
           options:{cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:t,boxWidth:10,font:{size:10}}}}}},force);
       if(key==='top') this.renderTop(force);
-      if(key==='customers') this.mk(key,{type:'bar',data:{labels:d.customers.labels,datasets:[{label:'₹',data:d.customers.values,backgroundColor:'#ec4899',borderRadius:5}]},
+      if(key==='customers') this.mk(key,{type:'bar',data:{labels:d.customers.labels,datasets:[{label:'₹',data:d.customers.values,backgroundColor:'#0f766e',borderRadius:5}]},
           options:{indexAxis:'y',plugins:{legend:{display:false}},scales:cartesian()}},force);
       if(key==='so_status') this.mk(key,{type:'polarArea',data:{labels:d.so_status.labels,datasets:[{data:d.so_status.values,backgroundColor:P.map(c=>c+'cc')}]},
           options:{plugins:{legend:{position:'right',labels:{color:t,boxWidth:10,font:{size:11}}}},scales:{r:{ticks:{display:false},grid:{color:g}}}}},force);
-      if(key==='mo_status') this.mk(key,{type:'bar',data:{labels:d.mo_status.labels,datasets:[{label:'MOs',data:d.mo_status.values,backgroundColor:'#6366f1',borderRadius:5}]},
+      if(key==='mo_status') this.mk(key,{type:'bar',data:{labels:d.mo_status.labels,datasets:[{label:'MOs',data:d.mo_status.values,backgroundColor:'#2b5fa6',borderRadius:5}]},
           options:{plugins:{legend:{display:false}},scales:cartesian()}},force);
-      if(key==='procurement') this.mk(key,{type:'doughnut',data:{labels:['Purchase','Manufacture'],datasets:[{data:[d.procurement.buy,d.procurement.manufacture],backgroundColor:['#10b981','#0ea5e9'],borderWidth:0}]},
+      if(key==='procurement') this.mk(key,{type:'doughnut',data:{labels:['Purchase','Manufacture'],datasets:[{data:[d.procurement.buy,d.procurement.manufacture],backgroundColor:['#2b5fa6','#0f766e'],borderWidth:0}]},
           options:{cutout:'58%',plugins:{legend:{position:'bottom',labels:{color:t,boxWidth:10}}}}},force);
       if(key==='sankey'){
         if(this.sankeyReady())
@@ -227,7 +227,7 @@ function dash(){
     renderTop(force){
       if(!this.data)return; const d=this.data,t=this.tick(),g=this.grid();
       const vals=this.topMetric==='qty'?d.top_products.qty:d.top_products.revenue;
-      this.mk('top',{type:'bar',data:{labels:d.top_products.labels,datasets:[{label:this.topMetric,data:vals,backgroundColor:'#8b5cf6',borderRadius:5}]},
+      this.mk('top',{type:'bar',data:{labels:d.top_products.labels,datasets:[{label:this.topMetric,data:vals,backgroundColor:'#2b5fa6',borderRadius:5}]},
         options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:t},grid:{color:g},beginAtZero:true},y:{ticks:{color:t},grid:{display:false}}}}},true);
     },
     renderSankeyFallback(flows){
@@ -236,7 +236,7 @@ function dash(){
       let wrap=el.parentNode.querySelector('.sankey-fb');
       if(!wrap){ wrap=document.createElement('div'); wrap.className='sankey-fb space-y-3 pt-1'; el.parentNode.insertBefore(wrap, el); }
       const max=Math.max(...flows.map(f=>f.flow),1);
-      wrap.innerHTML=flows.map(f=>`<div><div class="flex justify-between text-xs text-slate-500 mb-1"><span>${f.from} <span class="text-slate-400">→</span> ${f.to}</span><span class="font-semibold tabular-nums">${f.flow.toLocaleString('en-IN')}</span></div><div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-700" style="width:${Math.max(f.flow/max*100,4)}%"></div></div></div>`).join('');
+      wrap.innerHTML=flows.map(f=>`<div><div class="flex justify-between text-xs text-slate-500 mb-1"><span>${f.from} <span class="text-slate-400">→</span> ${f.to}</span><span class="font-semibold tabular-nums">${f.flow.toLocaleString('en-IN')}</span></div><div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-slate-500 to-slate-500 transition-all duration-700" style="width:${Math.max(f.flow/max*100,4)}%"></div></div></div>`).join('');
     },
   }
 }
