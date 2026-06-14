@@ -7,4 +7,5 @@ app_name = "inventory"
 urlpatterns = [
     path("", views.stock_overview, name="overview"),
     path("ledger/", views.ledger, name="ledger"),
+    path("adjust/", views.stock_adjust, name="adjust"),
 ]

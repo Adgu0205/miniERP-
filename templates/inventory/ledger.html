@@ -1,9 +1,15 @@
 {% extends "base.html" %}
 {% block breadcrumb %}Inventory / Stock Ledger{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">Stock Ledger</h1>
-  <a href="?product={{ sel_product }}&type={{ sel_type }}&export=csv" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">⬇ Export CSV</a>
+<div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+  <div>
+    <h1 class="page-title">Stock Ledger</h1>
+    <p class="page-sub">Append-only record of every inventory movement — the source of truth</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'inventory:overview' %}" class="btn btn-soft">← Overview</a>
+    <a href="?product={{ sel_product }}&type={{ sel_type }}&export=csv" class="btn btn-soft">⬇ Export CSV</a>
+  </div>
 </div>
 <form class="flex flex-wrap gap-2 mb-3 text-sm">
   <select name="product" class="inp max-w-xs" onchange="this.form.submit()">
@@ -21,7 +27,7 @@
     <td class="text-slate-500 whitespace-nowrap">{{ e.created_at|date:"d M Y H:i" }}</td>
     <td class="font-medium">{{ e.product.name }}</td>
     <td>{{ e.get_movement_type_display }}</td>
-    <td class="text-right font-semibold {% if e.quantity < 0 %}text-rose-500{% else %}text-emerald-600{% endif %}">{{ e.quantity }}</td>
+    <td class="text-right font-semibold {% if e.quantity < 0 %}text-rose-500{% else %}text-slate-600{% endif %}">{{ e.quantity }}</td>
     <td class="text-right">{{ e.balance_after }}</td>
     <td class="text-xs text-slate-500">{{ e.reference }}</td>
     <td class="text-xs text-slate-500">{{ e.created_by.username|default:"system" }}</td>

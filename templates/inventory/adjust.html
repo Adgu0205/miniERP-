@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block breadcrumb %}Inventory / Stock Adjustment{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h1 class="text-xl font-semibold">Stock Adjustment</h1>
+    <p class="text-xs text-slate-500">Correct physical stock (stock counts, damage, opening balance). Writes a ledger entry.</p>
+  </div>
+  <a href="{% url 'inventory:overview' %}" class="btn btn-soft">← Back</a>
+</div>
+<form method="post" class="card p-6 max-w-xl grid grid-cols-1 md:grid-cols-2 gap-4">
+  {% csrf_token %}
+  <div class="md:col-span-2">
+    <label class="block text-xs font-medium text-slate-500 mb-1">Product</label>
+    <select name="product" class="inp" required>
+      <option value="">Select a product…</option>
+      {% for p in products %}<option value="{{ p.pk }}">{{ p.name }} ({{ p.sku }}) · on hand {{ p.on_hand }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs font-medium text-slate-500 mb-1">Quantity (+ add / − remove)</label>
+    <input name="quantity" type="number" step="0.01" placeholder="e.g. 10 or -5" class="inp" required>
+  </div>
+  <div>
+    <label class="block text-xs font-medium text-slate-500 mb-1">Reason / Note</label>
+    <input name="note" placeholder="stock count, damaged…" class="inp">
+  </div>
+  <div class="md:col-span-2 flex gap-2">
+    <button class="btn btn-primary">Apply Adjustment</button>
+    <a href="{% url 'inventory:ledger' %}" class="btn btn-soft">View Ledger</a>
+  </div>
+</form>
+{% endblock %}
