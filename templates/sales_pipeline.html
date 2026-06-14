@@ -198,7 +198,7 @@
   <div class="kanban-column" data-status="cancelled">
     <div class="kanban-column-header">
       <span class="kanban-column-title">
-        <span class="badge badge-cancelled" style="border-radius:6px; font-size:11px; padding:3px 8px; background-color:#ef4444; color:#ffffff;">Cancelled</span>
+        <span class="badge badge-cancelled" style="border-radius:6px; font-size:11px; padding:3px 8px;">Cancelled</span>
       </span>
       <span class="kanban-card-count">{{ kanban_orders.cancelled.count }}</span>
     </div>
@@ -220,7 +220,7 @@
           </div>
           <div class="kanban-card-footer">
             <span class="kanban-card-price">₹{{ so.total_amount|floatformat:2 }}</span>
-            <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:#ef4444;">CANCELLED</span>
+            <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:var(--red);">CANCELLED</span>
           </div>
         </div>
       {% endfor %}
@@ -739,7 +739,7 @@
           }
           buttons.push(`<button class="btn btn-secondary" id="btn-drawer-edit-so" style="width:100%;">✏️ Edit Order</button>`);
           if (['draft', 'confirmed', 'partially_delivered'].includes(status)) {
-            buttons.push(`<button class="btn btn-secondary" id="btn-drawer-cancel-so" style="width:100%; color:#ef4444; border-color:#ef4444;">Cancel Order</button>`);
+            buttons.push(`<button class="btn btn-secondary" id="btn-drawer-cancel-so" style="width:100%; color:var(--red); border-color:rgba(243,139,168,0.4);">Cancel Order</button>`);
           }
           actionsContainer.innerHTML = buttons.join('');
         }

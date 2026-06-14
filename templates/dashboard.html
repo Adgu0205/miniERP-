@@ -4,196 +4,245 @@
 {% block heading %}Executive Dashboard{% endblock %}
 
 {% block content %}
-<!-- Top KPI Grid -->
-<div class="dashboard-grid">
+<style>
+  /* Dashboard-specific local overrides */
+  .panels-grid {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .rec-panel { padding: 0; }
+  .rec-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-1);
+  }
+  .rec-insights-list {
+    padding: 16px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .rec-insights-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.6;
+  }
+  .rec-insight-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green-accent);
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
 
-  <!-- Tile 1: Gross Revenue -->
-  <div class="kpi-card" style="position:relative; overflow:hidden;">
+  /* Section headings */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-3);
+    margin-bottom: 10px;
+  }
+</style>
+
+<!-- ── Primary KPI Row ───────────────────────────────── -->
+<div class="dashboard-grid" style="margin-bottom: 14px;">
+
+  <!-- Gross Revenue -->
+  <div class="kpi-card accent-green" style="position:relative; overflow:hidden;">
     <div class="kpi-header">
-      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Gross Revenue</span>
-      <div class="kpi-icon-container green-accent">
-        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:16px; height:16px;">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      <div>
+        <div class="kpi-label">Gross Revenue</div>
+      </div>
+      <div class="kpi-icon-box green">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
       </div>
     </div>
-    <div class="kpi-val" style="margin:6px 0 4px;">₹{{ total_sales_val|floatformat:2 }}</div>
-    <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px; line-height:1.5;">
-      Total value of <strong style="color:var(--text-primary);">{{ confirmed_so_count }}</strong> confirmed sales order{{ confirmed_so_count|pluralize }},
-      excluding cancelled orders
+    <div class="kpi-val">₹{{ total_sales_val|floatformat:2 }}</div>
+    <div class="kpi-sub">
+      From <strong>{{ confirmed_so_count }}</strong> confirmed order{{ confirmed_so_count|pluralize }}, excl. cancelled
     </div>
-    <div class="kpi-trend positive">
-      <span>↑ From active sales orders</span>
-    </div>
+    <div class="kpi-trend positive" style="margin-top:12px;">↑ Active pipeline</div>
     <a href="{% url 'sales_pipeline' %}" style="position:absolute; inset:0; z-index:1;" title="View Sales Orders"></a>
   </div>
 
-  <!-- Tile 2: Pending Deliveries -->
-  <div class="kpi-card" style="position:relative; overflow:hidden;">
+  <!-- Pending Deliveries -->
+  <div class="kpi-card {% if pending_deliveries > 2 %}accent-warn{% else %}accent-green{% endif %}" style="position:relative; overflow:hidden;">
     <div class="kpi-header">
-      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Pending Deliveries</span>
-      <div class="kpi-icon-container {% if pending_deliveries > 2 %}{% else %}green-accent{% endif %}">
-        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:16px; height:16px;">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12h12L19 8M10 12h4"></path>
+      <div>
+        <div class="kpi-label">Pending Deliveries</div>
+      </div>
+      <div class="kpi-icon-box {% if pending_deliveries > 2 %}warn{% else %}green{% endif %}">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12h12L19 8M10 12h4"/>
         </svg>
       </div>
     </div>
-    <div class="kpi-val" style="margin:6px 0 4px; {% if pending_deliveries > 2 %}color:#f59e0b;{% endif %}">{{ pending_deliveries }} Order{{ pending_deliveries|pluralize }}</div>
-    <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px; line-height:1.5;">
-      <strong style="color:var(--text-primary);">{{ confirmed_so_count_pend }}</strong> awaiting dispatch &middot;
-      <strong style="color:var(--text-primary);">{{ partially_delivered_count }}</strong> partially shipped
+    <div class="kpi-val" style="{% if pending_deliveries > 2 %}color:var(--color-warning);{% endif %}">
+      {{ pending_deliveries }} <span style="font-size:18px; font-weight:600; letter-spacing:-0.5px;">Order{{ pending_deliveries|pluralize }}</span>
     </div>
-    <div class="kpi-trend {% if pending_deliveries > 2 %}negative{% else %}positive{% endif %}">
-      <span>{% if pending_deliveries > 2 %}⚠ High Queue — action needed{% else %}✓ Queue within normal range{% endif %}</span>
+    <div class="kpi-sub">
+      <strong>{{ confirmed_so_count_pend }}</strong> awaiting dispatch · <strong>{{ partially_delivered_count }}</strong> partial
     </div>
-    <a href="{% url 'sales_pipeline' %}" style="position:absolute; inset:0; z-index:1;" title="View Sales Orders"></a>
+    <div class="kpi-trend {% if pending_deliveries > 2 %}negative{% else %}positive{% endif %}" style="margin-top:12px;">
+      {% if pending_deliveries > 2 %}⚠ High queue{% else %}✓ Normal range{% endif %}
+    </div>
+    <a href="{% url 'sales_pipeline' %}" style="position:absolute; inset:0; z-index:1;"></a>
   </div>
 
-  <!-- Tile 3: Active Production -->
-  <div class="kpi-card" style="position:relative; overflow:hidden;">
+  <!-- Active Production -->
+  <div class="kpi-card accent-lav" style="position:relative; overflow:hidden;">
     <div class="kpi-header">
-      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Active Production</span>
-      <div class="kpi-icon-container">
-        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:16px; height:16px;">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+      <div>
+        <div class="kpi-label">Active Production</div>
+      </div>
+      <div class="kpi-icon-box lav">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
         </svg>
       </div>
     </div>
-    <div class="kpi-val" style="margin:6px 0 4px;">{{ active_mfg_orders }} MO{{ active_mfg_orders|pluralize }}</div>
-    <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px; line-height:1.5;">
-      <strong style="color:var(--text-primary);">{{ completed_mos }}</strong> of <strong style="color:var(--text-primary);">{{ total_mos }}</strong> total orders completed
-      ({{ mfg_efficiency }}% completion rate)
+    <div class="kpi-val" style="color:var(--lavender);">
+      {{ active_mfg_orders }} <span style="font-size:18px; font-weight:600; letter-spacing:-0.5px;">MO{{ active_mfg_orders|pluralize }}</span>
     </div>
-    <div class="kpi-trend {% if mfg_efficiency >= 75 %}positive{% else %}negative{% endif %}">
-      <span>{% if mfg_efficiency >= 75 %}✓ On track{% else %}⚠ Below 75% benchmark{% endif %}</span>
+    <div class="kpi-sub">
+      <strong>{{ completed_mos }}</strong> of <strong>{{ total_mos }}</strong> completed · {{ mfg_efficiency }}% rate
     </div>
-    <a href="{% url 'manufacturing_cockpit' %}" style="position:absolute; inset:0; z-index:1;" title="View Manufacturing Orders"></a>
+    <div class="kpi-trend {% if mfg_efficiency >= 75 %}positive{% else %}negative{% endif %}" style="margin-top:12px;">
+      {% if mfg_efficiency >= 75 %}✓ On track{% else %}⚠ Below 75%{% endif %}
+    </div>
+    <a href="{% url 'manufacturing_cockpit' %}" style="position:absolute; inset:0; z-index:1;"></a>
   </div>
 
-  <!-- Tile 4: Inventory Value -->
-  <div class="kpi-card" style="position:relative; overflow:hidden;">
+  <!-- Inventory Value -->
+  <div class="kpi-card gradient-lav" style="position:relative; overflow:hidden;">
     <div class="kpi-header">
-      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Inventory Value</span>
-      <div class="kpi-icon-container green-accent">
-        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:16px; height:16px;">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+      <div>
+        <div class="kpi-label" style="color:rgba(167,139,250,0.6);">Inventory Value</div>
+      </div>
+      <div class="kpi-icon-box lav">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
         </svg>
       </div>
     </div>
-    <div class="kpi-val" style="margin:6px 0 4px;">₹{{ total_inventory_value|floatformat:2 }}</div>
-    <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px; line-height:1.5;">
-      Across <strong style="color:var(--text-primary);">{{ total_products_count }}</strong> product{{ total_products_count|pluralize }} in catalog
-      (on‑hand qty × cost price)
+    <div class="kpi-val" style="color:var(--lavender);">₹{{ total_inventory_value|floatformat:2 }}</div>
+    <div class="kpi-sub" style="color:rgba(167,139,250,0.5);">
+      Across <strong style="color:var(--lavender);">{{ total_products_count }}</strong> product{{ total_products_count|pluralize }} in catalog
     </div>
-    <div class="kpi-trend positive">
-      <span>Total stockholding cost</span>
+    <div class="kpi-trend" style="background:var(--lavender-dim); color:var(--lavender); margin-top:12px;">
+      On-hand qty × cost price
     </div>
-    <a href="{% url 'products_list' %}" style="position:absolute; inset:0; z-index:1;" title="View Products"></a>
+    <a href="{% url 'products_list' %}" style="position:absolute; inset:0; z-index:1;"></a>
   </div>
 
 </div>
 
-<!-- Secondary KPI Row -->
-<div class="dashboard-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+<!-- ── Secondary KPI Row ─────────────────────────────── -->
+<div class="dashboard-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 16px;">
 
-  <!-- Tile 5: Stock Shortages -->
-  <div class="kpi-card" style="min-height:110px; padding:16px 20px; position:relative; overflow:hidden;">
-    <div class="kpi-header" style="margin-bottom:6px;">
-      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Stock Shortages</span>
+  <!-- Stock Shortages -->
+  <div class="kpi-card" style="padding:18px 20px; position:relative; overflow:hidden;">
+    <div class="kpi-label">Stock Shortages</div>
+    <div style="display:flex; align-items:baseline; gap:8px; margin:8px 0 4px;">
+      <span style="font-size:34px; font-weight:800; letter-spacing:-2px; color:{% if shortage_items > 0 %}var(--color-danger){% else %}var(--green-accent){% endif %};">{{ shortage_items }}</span>
+      <span style="font-size:12px; color:var(--text-3); font-weight:500;">SKU{{ shortage_items|pluralize }}</span>
     </div>
-    <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
-      <div class="kpi-val" style="font-size: 26px; margin-top:0; color:{% if shortage_items > 0 %}#ef4444{% else %}var(--accent-hover){% endif %};">{{ shortage_items }}</div>
-      <span style="font-size:12px; color:var(--text-muted);">product{{ shortage_items|pluralize }} below reorder threshold</span>
+    <div style="font-size:12px; color:var(--text-3);">
+      <span style="color:{% if safe_stock_count == total_products_count %}var(--green-accent){% else %}var(--text-2){% endif %}; font-weight:600;">{{ safe_stock_count }}</span>
+      /{{ total_products_count }} at safe level
     </div>
-    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">
-      <strong style="color:{% if safe_stock_count == total_products_count %}var(--accent-hover){% else %}var(--text-primary){% endif %};">{{ safe_stock_count }}</strong>
-      of {{ total_products_count }} products at safe levels
-    </div>
-    <a href="{% url 'products_list' %}" style="position:absolute; inset:0; z-index:1;" title="View Products"></a>
+    <a href="{% url 'products_list' %}" style="position:absolute; inset:0; z-index:1;"></a>
   </div>
 
-  <!-- Tile 6: Replenishment Queue (Active POs) -->
-  <div class="kpi-card" style="min-height:110px; padding:16px 20px; position:relative; overflow:hidden;">
-    <div class="kpi-header" style="margin-bottom:6px;">
-      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Replenishment Queue</span>
+  <!-- Replenishment -->
+  <div class="kpi-card" style="padding:18px 20px; position:relative; overflow:hidden;">
+    <div class="kpi-label">Replenishment</div>
+    <div style="display:flex; align-items:baseline; gap:8px; margin:8px 0 4px;">
+      <span style="font-size:34px; font-weight:800; letter-spacing:-2px; color:var(--color-info);">{{ active_purchase_orders }}</span>
+      <span style="font-size:12px; color:var(--text-3); font-weight:500;">PO{{ active_purchase_orders|pluralize }}</span>
     </div>
-    <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
-      <div class="kpi-val" style="font-size: 26px; margin-top:0;">{{ active_purchase_orders }} PO{{ active_purchase_orders|pluralize }}</div>
-      <span style="font-size:12px; color:var(--text-muted);">in transit from vendors</span>
+    <div style="font-size:12px; color:var(--text-3);">
+      <span style="color:var(--text-2); font-weight:600;">{{ confirmed_pos_count }}</span> confirmed ·
+      <span style="color:var(--text-2); font-weight:600;">{{ partially_received_pos }}</span> partial
     </div>
-    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">
-      <strong style="color:var(--text-primary);">{{ confirmed_pos_count }}</strong> confirmed &middot;
-      <strong style="color:var(--text-primary);">{{ partially_received_pos }}</strong> partially received
-    </div>
-    <a href="{% url 'purchase_list' %}" style="position:absolute; inset:0; z-index:1;" title="View Purchase Orders"></a>
+    <a href="{% url 'purchase_list' %}" style="position:absolute; inset:0; z-index:1;"></a>
   </div>
 
-  <!-- Tile 7: Delayed Orders -->
-  <div class="kpi-card" style="min-height:110px; padding:16px 20px; position:relative; overflow:hidden;">
-    <div class="kpi-header" style="margin-bottom:6px;">
-      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Delayed Orders</span>
+  <!-- Delayed Orders -->
+  <div class="kpi-card" style="padding:18px 20px; position:relative; overflow:hidden;">
+    <div class="kpi-label">Delayed Orders</div>
+    <div style="display:flex; align-items:baseline; gap:8px; margin:8px 0 4px;">
+      <span style="font-size:34px; font-weight:800; letter-spacing:-2px; color:{% if delayed_orders > 0 %}var(--color-danger){% else %}var(--green-accent){% endif %};">{{ delayed_orders }}</span>
+      <span style="font-size:12px; color:var(--text-3); font-weight:500;">{% if delayed_orders > 0 %}overdue{% else %}on time{% endif %}</span>
     </div>
-    <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
-      <div class="kpi-val" style="font-size: 26px; margin-top:0; color:{% if delayed_orders > 0 %}#ef4444{% else %}var(--accent-hover){% endif %};">{{ delayed_orders }}</div>
-      <span style="font-size:12px; color:var(--text-muted);">{% if delayed_orders > 0 %}order{{ delayed_orders|pluralize }} past expected date{% else %}no overdue orders{% endif %}</span>
+    <div style="font-size:12px; color:var(--text-3);">
+      {% if delayed_orders > 0 %}Past expected delivery date{% else %}✓ All on or ahead of schedule{% endif %}
     </div>
-    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">
-      {% if delayed_orders > 0 %}
-        Orders past their expected delivery date and still open
-      {% else %}
-        ✓ All orders are on or ahead of schedule
-      {% endif %}
-    </div>
-    <a href="{% url 'sales_pipeline' %}" style="position:absolute; inset:0; z-index:1;" title="View Sales Orders"></a>
+    <a href="{% url 'sales_pipeline' %}" style="position:absolute; inset:0; z-index:1;"></a>
   </div>
 
-  <!-- Tile 8: Fulfilment Rate -->
-  <div class="kpi-card" style="min-height:110px; padding:16px 20px; position:relative; overflow:hidden;">
-    <div class="kpi-header" style="margin-bottom:6px;">
-      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Fulfilment Rate</span>
+  <!-- Fulfilment Rate -->
+  <div class="kpi-card gradient-green" style="padding:18px 20px; position:relative; overflow:hidden;">
+    <div class="kpi-label" style="color:rgba(185,255,87,0.5);">Fulfilment Rate</div>
+    <div style="display:flex; align-items:baseline; gap:8px; margin:8px 0 4px;">
+      <span style="font-size:34px; font-weight:800; letter-spacing:-2px; color:{% if fulfillment_rate >= 80 %}var(--green-accent){% else %}var(--color-warning){% endif %};">{{ fulfillment_rate }}%</span>
     </div>
-    <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
-      <div class="kpi-val" style="font-size: 26px; margin-top:0; color:{% if fulfillment_rate >= 80 %}var(--accent-hover){% else %}#ef4444{% endif %};">{{ fulfillment_rate }}%</div>
-      <span style="font-size:12px; color:var(--text-muted);">of orders fully delivered</span>
+    <div style="font-size:12px; color:rgba(185,255,87,0.4);">
+      <span style="color:var(--green-accent); font-weight:600;">{{ fully_delivered }}</span> of {{ total_non_cancelled }} orders delivered
     </div>
-    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">
-      <strong style="color:var(--text-primary);">{{ fully_delivered }}</strong> fully delivered
-      of <strong style="color:var(--text-primary);">{{ total_non_cancelled }}</strong> active order{{ total_non_cancelled|pluralize }}
-    </div>
-    <a href="{% url 'sales_pipeline' %}" style="position:absolute; inset:0; z-index:1;" title="View Sales Orders"></a>
+    <a href="{% url 'sales_pipeline' %}" style="position:absolute; inset:0; z-index:1;"></a>
   </div>
 
 </div>
 
-<!-- Charts Section -->
-<div class="panels-grid">
+<!-- ── Charts Row ────────────────────────────────────── -->
+<div class="panels-grid" style="margin-bottom:16px;">
+
   <div class="card-panel">
     <div class="panel-header">
-      <h3 class="panel-title">Revenue Trends (Last 12 Months — Live Data)</h3>
+      <h3 class="panel-title">Revenue Trends</h3>
+      <span style="font-size:11px; color:var(--text-3); font-weight:600;">Last 12 Months — Live Data</span>
     </div>
-    <div class="chart-wrapper">
-      <canvas id="revenueTrendsChart"></canvas>
+    <div class="chart-wrapper" style="padding:16px 20px;">
+      <canvas id="revenueTrendsChart" style="max-height:220px;"></canvas>
     </div>
   </div>
 
   <div class="card-panel">
     <div class="panel-header">
-      <h3 class="panel-title">Stock Valuation Breakdowns</h3>
+      <h3 class="panel-title">Stock Valuation</h3>
+      <span style="font-size:11px; color:var(--text-3); font-weight:600;">By Product</span>
     </div>
-    <div class="chart-wrapper">
-      <canvas id="stockBreakdownChart"></canvas>
+    <div class="chart-wrapper" style="padding:16px 20px;">
+      <canvas id="stockBreakdownChart" style="max-height:220px;"></canvas>
     </div>
   </div>
+
 </div>
 
-<!-- Recommendations and Actions Panel -->
-<div class="panels-grid" style="grid-template-columns: 1fr 1fr;">
+<!-- ── Insights + Quick Actions ──────────────────────── -->
+<div class="panels-grid" style="margin-bottom:16px;">
   <div class="card-panel rec-panel">
     <div class="rec-header">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:20px; height:20px; flex-shrink:0;">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:18px; height:18px; color:var(--green-accent);">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
-      <span>Smart Recommendations Panel</span>
+      Smart Recommendations
     </div>
     <ul class="rec-insights-list">
       {% for insight in insights %}
@@ -207,56 +256,66 @@
 
   <div class="card-panel">
     <div class="panel-header">
-      <h3 class="panel-title">Quick Actions Panel</h3>
+      <h3 class="panel-title">Quick Actions</h3>
     </div>
-    <div style="display:flex; flex-wrap:wrap; gap:12px; height: 100%; align-content:center;">
-      <a href="{% url 'sales_pipeline' %}?trigger=create" class="btn btn-primary" id="btn-create-so">
-        <span>+</span> Create Sales Order
+    <div style="padding:20px 22px; display:flex; flex-direction:column; gap:10px;">
+      <a href="{% url 'sales_pipeline' %}?trigger=create" class="btn btn-primary" id="btn-create-so" style="justify-content:flex-start;">
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:15px; height:15px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        Create Sales Order
       </a>
-      <button class="btn btn-secondary" id="btn-trigger-mts">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px; height:14px; margin-right:4px;">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18"></path>
+      <button class="btn btn-secondary" id="btn-trigger-mts" style="justify-content:flex-start;">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:15px; height:15px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18"/>
         </svg>
         Run MTS Reorder Rules
       </button>
-      <a href="{% url 'stock_ledger' %}" class="btn btn-secondary">
-        View Ledger logs
+      <a href="{% url 'stock_ledger' %}" class="btn btn-secondary" style="justify-content:flex-start;">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:15px; height:15px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        View Stock Ledger
       </a>
-      <a href="{% url 'inventory_movements' %}" class="btn btn-secondary">
+      <a href="{% url 'inventory_movements' %}" class="btn btn-secondary" style="justify-content:flex-start;">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:15px; height:15px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+        </svg>
         Inventory Movements
       </a>
     </div>
   </div>
 </div>
 
-<!-- Recent Activities list -->
-<div class="card-panel" style="margin-bottom: 0;">
+<!-- ── Recent Activity ───────────────────────────────── -->
+<div class="card-panel">
   <div class="panel-header">
-    <h3 class="panel-title">Recent System Activities</h3>
+    <h3 class="panel-title">Recent Activity</h3>
+    <a href="{% url 'audit_logs' %}" class="btn btn-secondary btn-sm">View All Logs</a>
   </div>
   <div class="table-responsive">
     <table class="erp-table">
       <thead>
         <tr>
-          <th>Timestamp</th>
+          <th>Time</th>
           <th>Module</th>
           <th>Action</th>
-          <th>Description Details</th>
-          <th>Employee</th>
+          <th>Details</th>
+          <th>User</th>
         </tr>
       </thead>
       <tbody>
         {% for log in recent_activities %}
           <tr>
-            <td style="color:var(--text-muted); font-size:12px;">{{ log.timestamp }}</td>
-            <td><span class="badge" style="background-color:var(--bg-tertiary); color:var(--text-primary); border-radius:4px; font-size:11px;">{{ log.module }}</span></td>
-            <td style="font-weight:600;">{{ log.action }}</td>
-            <td style="color:var(--text-secondary);">{{ log.details }}</td>
-            <td style="font-size:13px; font-weight:500;">{{ log.user }}</td>
+            <td style="color:var(--text-3); font-size:12px; white-space:nowrap;">{{ log.timestamp }}</td>
+            <td><span class="badge" style="background:var(--bg-raised); color:var(--text-2);">{{ log.module }}</span></td>
+            <td style="font-weight:600; color:var(--text-1);">{{ log.action }}</td>
+            <td style="color:var(--text-2);">{{ log.details }}</td>
+            <td style="font-size:12px; color:var(--text-2);">{{ log.user }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="5" style="text-align:center; color:var(--text-muted);">No logs posted.</td>
+            <td colspan="5" style="text-align:center; color:var(--text-3); padding:32px;">No activity logs yet.</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -266,7 +325,8 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    // P2: Real Revenue Trend Chart (12 months from DB)
+
+    // ── Revenue Trend Chart ────────────────────────────
     const ctxTrends = document.getElementById('revenueTrendsChart');
     if (ctxTrends) {
       new Chart(ctxTrends, {
@@ -276,34 +336,38 @@
           datasets: [{
             label: 'Revenue (₹)',
             data: {{ monthly_revenue|safe }},
-            borderColor: '#10b981',
-            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+            borderColor: '#b9ff57',
+            backgroundColor: 'rgba(185, 255, 87, 0.06)',
             tension: 0.4,
             fill: true,
-            borderWidth: 3,
-            pointBackgroundColor: '#111111',
-            pointBorderColor: '#10b981',
+            borderWidth: 2,
+            pointBackgroundColor: '#0c0c0f',
+            pointBorderColor: '#b9ff57',
+            pointRadius: 3,
             pointHoverRadius: 6
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
-            x: { grid: { display: false } },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#55556a', font: { size: 11 } },
+              border: { color: 'rgba(255,255,255,0.06)' }
+            },
             y: {
-              grid: { borderDash: [5, 5] },
-              ticks: { callback: value => '₹' + value.toLocaleString() }
+              grid: { color: 'rgba(255,255,255,0.04)', borderDash: [4, 4] },
+              ticks: { callback: v => '₹' + v.toLocaleString(), color: '#55556a', font: { size: 11 } },
+              border: { color: 'rgba(255,255,255,0.06)' }
             }
           }
         }
       });
     }
 
-    // Chart 2: Product Stock Level Breakdown
+    // ── Stock Breakdown Chart ──────────────────────────
     const ctxStock = document.getElementById('stockBreakdownChart');
     if (ctxStock) {
       new Chart(ctxStock, {
@@ -314,14 +378,14 @@
             {
               label: 'Free To Use',
               data: {{ chart_free|safe }},
-              backgroundColor: '#10b981',
-              borderRadius: 6
+              backgroundColor: 'rgba(185, 255, 87, 0.75)',
+              borderRadius: 5
             },
             {
               label: 'Reserved',
               data: {{ chart_reserved|safe }},
-              backgroundColor: '#111111',
-              borderRadius: 6
+              backgroundColor: 'rgba(167, 139, 250, 0.7)',
+              borderRadius: 5
             }
           ]
         },
@@ -331,27 +395,27 @@
           plugins: {
             legend: {
               position: 'top',
-              labels: { boxWidth: 12, font: { family: 'Outfit' } }
+              labels: { boxWidth: 10, font: { size: 11 }, color: '#9999aa', padding: 12 }
             }
           },
           scales: {
-            x: { stacked: true, grid: { display: false } },
-            y: { stacked: true, grid: { borderDash: [5, 5] } }
+            x: { stacked: true, grid: { display: false }, ticks: { color: '#55556a', font: { size: 11 } }, border: { color: 'rgba(255,255,255,0.06)' } },
+            y: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)', borderDash: [4, 4] }, ticks: { color: '#55556a', font: { size: 11 } }, border: { color: 'rgba(255,255,255,0.06)' } }
           }
         }
       });
     }
 
-    // MTS run event
+    // ── MTS Trigger ────────────────────────────────────
     document.getElementById("btn-trigger-mts").addEventListener("click", () => {
       fetch("/?action=run_mts", { method: 'POST' })
         .then(res => res.json())
         .then(data => {
           if (data.status === 'success') {
-            showToast(`MTS rules scanned: triggered ${data.triggers} replenishment orders!`, "success");
+            showToast(`MTS rules triggered ${data.triggers} replenishment orders!`, "success");
             setTimeout(() => window.location.reload(), 1500);
           } else {
-            showToast("MTS reorder rules check completed.", "info");
+            showToast("MTS reorder rules check completed.", "success");
           }
         });
     });

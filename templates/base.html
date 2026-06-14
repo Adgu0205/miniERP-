@@ -4,94 +4,105 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Odoo Mini ERP - {% block title %}Dashboard{% endblock %}</title>
+  <title>Mini ERP — {% block title %}Dashboard{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'style.css' %}">
-  <!-- Load Chart.js CDN for Analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <!-- Sidebar Component -->
+  <!-- ── Sidebar ────────────────────────────────────────── -->
   <aside class="sidebar">
+    <!-- Logo -->
     <div class="sidebar-header">
-      <div class="sidebar-logo">o</div>
-      <span class="sidebar-title">Mini ERP</span>
+      <div class="sidebar-logo">E</div>
+      <span class="sidebar-title">Mini&nbsp;ERP</span>
     </div>
-    
+
+    <!-- Navigation -->
     <nav class="sidebar-menu">
-      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" data-page="dashboard">
+
+      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
         <a href="{% url 'dashboard' %}">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 13a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6z"/>
           </svg>
-          Dashboard
+          <span>Dashboard</span>
         </a>
       </li>
-      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'products_list' %}active{% endif %}" data-page="products">
+
+      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'products_list' %}active{% endif %}">
         <a href="{% url 'products_list' %}">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
           </svg>
-          Products
+          <span>Products</span>
         </a>
       </li>
-      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'sales_pipeline' %}active{% endif %}" data-page="sales">
+
+      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'sales_pipeline' %}active{% endif %}">
         <a href="{% url 'sales_pipeline' %}">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
           </svg>
-          Sales Orders
+          <span>Sales Orders</span>
         </a>
       </li>
-      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'purchase_list' %}active{% endif %}" data-page="purchase">
+
+      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'purchase_list' %}active{% endif %}">
         <a href="{% url 'purchase_list' %}">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
           </svg>
-          Purchase Orders
+          <span>Purchase Orders</span>
         </a>
       </li>
-      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'manufacturing_cockpit' %}active{% endif %}" data-page="manufacturing">
+
+      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'manufacturing_cockpit' %}active{% endif %}">
         <a href="{% url 'manufacturing_cockpit' %}">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
           </svg>
-          Manufacturing
+          <span>Manufacturing</span>
         </a>
       </li>
-      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'bom_list' %}active{% endif %}" data-page="bom">
+
+      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'bom_list' %}active{% endif %}">
         <a href="{% url 'bom_list' %}">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
           </svg>
-          Bills of Material
+          <span>Bills of Material</span>
         </a>
       </li>
 
-      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}" data-page="audit">
+      <li class="sidebar-menu-item {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}">
         <a href="{% url 'audit_logs' %}">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
           </svg>
-          Audit logs
+          <span>Audit Logs</span>
         </a>
       </li>
+
     </nav>
 
-    <!-- Sidebar Footer with user badge -->
+    <!-- User Footer -->
     <div class="sidebar-footer">
       <div class="user-profile-badge">
-        <div class="user-avatar" id="avatar-letters">{{ user_info.letters }}</div>
+        <div class="user-avatar">{{ user_info.letters }}</div>
         <div class="user-info">
-          <span class="user-name" id="user-display-name">{{ user_info.name }}</span>
-          <span class="user-role-label" id="user-display-role">
+          <span class="user-name">{{ user_info.name }}</span>
+          <span class="user-role-label">
             {% if role == 'admin' %}Administrator
             {% elif role == 'sales_user' %}Sales Representative
             {% elif role == 'purchase_user' %}Procurement Manager
             {% elif role == 'manufacturing_user' %}Shop Floor Operator
-            {% elif role == 'inventory_manager' %}Stockroom Controller
-            {% elif role == 'business_owner' %}Shiv (CEO)
+            {% elif role == 'inventory_manager' %}Inventory Controller
+            {% elif role == 'business_owner' %}Business Owner
             {% endif %}
           </span>
         </div>
@@ -99,65 +110,72 @@
     </div>
   </aside>
 
-  <!-- Main View Wrapper -->
+  <!-- ── Main Wrapper ──────────────────────────────────── -->
   <main class="main-wrapper">
+
     <!-- Top Header -->
     <header class="top-header">
       <div class="header-title-area">
-        <h1 id="page-main-title">{% block heading %}Executive Dashboard{% endblock %}</h1>
+        <h1>{% block heading %}Dashboard{% endblock %}</h1>
       </div>
       <div class="header-actions">
-        <!-- Interactive Role Switcher Form -->
-        <form action="{% url 'switch_role' %}" method="POST" id="role-switch-form" class="role-selector-container">
+
+        <!-- Role Switcher -->
+        <form action="{% url 'switch_role' %}" method="POST" class="role-selector-container">
           {% csrf_token %}
-          <label for="role-select">Active Role:</label>
+          <label for="role-select">Role</label>
           <select name="role" id="role-select" class="role-select" onchange="this.form.submit()">
-            <option value="admin" {% if role == 'admin' %}selected{% endif %}>Admin</option>
-            <option value="sales_user" {% if role == 'sales_user' %}selected{% endif %}>Sales User</option>
-            <option value="purchase_user" {% if role == 'purchase_user' %}selected{% endif %}>Purchase User</option>
-            <option value="manufacturing_user" {% if role == 'manufacturing_user' %}selected{% endif %}>Manufacturing User</option>
-            <option value="inventory_manager" {% if role == 'inventory_manager' %}selected{% endif %}>Inventory Manager</option>
-            <option value="business_owner" {% if role == 'business_owner' %}selected{% endif %}>Business Owner</option>
+            <option value="admin"               {% if role == 'admin' %}selected{% endif %}>Admin</option>
+            <option value="sales_user"          {% if role == 'sales_user' %}selected{% endif %}>Sales</option>
+            <option value="purchase_user"       {% if role == 'purchase_user' %}selected{% endif %}>Purchase</option>
+            <option value="manufacturing_user"  {% if role == 'manufacturing_user' %}selected{% endif %}>Manufacturing</option>
+            <option value="inventory_manager"   {% if role == 'inventory_manager' %}selected{% endif %}>Inventory</option>
+            <option value="business_owner"      {% if role == 'business_owner' %}selected{% endif %}>Owner</option>
           </select>
         </form>
-        
-        <!-- Notification Center Bell -->
-        <div class="notification-bell" id="notification-bell-btn">
+
+        <!-- Notification Bell -->
+        <button class="notification-bell" id="notification-bell-btn" type="button">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
           </svg>
           <div class="notification-badge" id="notification-unread-dot" style="display:{% if unread_notifications > 0 %}block{% else %}none{% endif %};"></div>
-        </div>
+        </button>
+
       </div>
     </header>
 
-    <!-- Main Dynamic Content Canvas -->
+    <!-- Page Content -->
     <section class="app-content">
       {% block content %}{% endblock %}
     </section>
   </main>
 
-  <!-- Notification Drawer Overlay -->
+  <!-- ── Notification Drawer ───────────────────────────── -->
   <div class="drawer-overlay" id="notif-drawer-overlay" style="display:none;">
-    <div class="drawer-content" style="width: 420px;">
+    <div class="drawer-content" style="width: 400px;">
       <div class="drawer-header">
-        <h2 class="drawer-title">Activity Notification Logs</h2>
-        <button class="modal-close" id="close-notif-drawer">✕</button>
+        <h2 class="drawer-title">Activity Feed</h2>
+        <button class="modal-close" id="close-notif-drawer" type="button">✕</button>
       </div>
       <div class="drawer-body">
-        <div class="timeline" id="notifications-timeline-list">
-          <!-- Timelines loaded server side in script tag below -->
-        </div>
+        <div class="timeline" id="notifications-timeline-list"></div>
       </div>
     </div>
   </div>
 
-  <!-- Toast Notification System -->
+  <!-- ── Toast Container ──────────────────────────────── -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- Global scripts for Notifications and Toasts -->
+  <!-- ── Global JS ────────────────────────────────────── -->
   <script>
-    // System timeline seeds
+    /* ── Chart.js Global Dark Defaults ────────────────── */
+    Chart.defaults.color = '#9999aa';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size = 12;
+
+    /* ── Notifications ─────────────────────────────────── */
     const notifications = [
       {% for n in notifications_list %}
       {
@@ -168,62 +186,45 @@
       {% endfor %}
     ];
 
-    // Notification bell actions
-    const bell = document.getElementById("notification-bell-btn");
-    const drawer = document.getElementById("notif-drawer-overlay");
-    const timeline = document.getElementById("notifications-timeline-list");
-    
-    bell.addEventListener("click", () => {
-      // Mark read via AJAX
-      fetch("{% url 'mark_notifications_read' %}", { method: 'POST' })
-        .then(() => {
-          document.getElementById("notification-unread-dot").style.display = "none";
-        });
+    const bell    = document.getElementById("notification-bell-btn");
+    const drawer  = document.getElementById("notif-drawer-overlay");
+    const timeline= document.getElementById("notifications-timeline-list");
 
-      // Render items
-      if (notifications.length === 0) {
-        timeline.innerHTML = '<p style="color:var(--text-secondary); text-align:center; margin-top:40px;">No alerts posted yet.</p>';
-      } else {
-        timeline.innerHTML = notifications.map(n => `
-          <div class="timeline-item">
-            <div class="timeline-dot ${!n.read ? 'green' : ''}"></div>
-            <div class="timeline-time">${n.timestamp}</div>
-            <div class="timeline-content">${n.message}</div>
-          </div>
-        `).join('');
-      }
-      
+    bell.addEventListener("click", () => {
+      fetch("{% url 'mark_notifications_read' %}", { method: 'POST' })
+        .then(() => { document.getElementById("notification-unread-dot").style.display = "none"; });
+
+      timeline.innerHTML = notifications.length === 0
+        ? '<p style="color:var(--text-3); text-align:center; margin-top:48px; font-size:13px;">No alerts yet.</p>'
+        : notifications.map(n => `
+            <div class="timeline-item">
+              <div class="timeline-dot ${!n.read ? 'green' : ''}"></div>
+              <div class="timeline-time">${n.timestamp}</div>
+              <div class="timeline-content">${n.message}</div>
+            </div>`).join('');
+
       drawer.style.display = "flex";
     });
 
     const closeNotif = () => drawer.style.display = "none";
     document.getElementById("close-notif-drawer").addEventListener("click", closeNotif);
-    drawer.addEventListener("click", (e) => {
-      if (e.target === drawer) closeNotif();
-    });
+    drawer.addEventListener("click", e => { if (e.target === drawer) closeNotif(); });
 
-    // Toast Service
+    /* ── Toast Service ─────────────────────────────────── */
     function showToast(message, type = "success") {
       const container = document.getElementById("toast-container");
       const toast = document.createElement("div");
       toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <span>${message}</span>
-        <button class="toast-close">✕</button>
-      `;
+      toast.innerHTML = `<span>${message}</span><button class="toast-close" type="button">✕</button>`;
       container.appendChild(toast);
-      
       const remove = () => {
-        if (container.contains(toast)) {
-          toast.style.animation = "toastEnter 0.2s reverse ease";
-          setTimeout(() => {
-            if (container.contains(toast)) container.removeChild(toast);
-          }, 180);
-        }
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(20px)";
+        toast.style.transition = "all 200ms ease";
+        setTimeout(() => { if (container.contains(toast)) container.removeChild(toast); }, 200);
       };
-      
       toast.querySelector(".toast-close").addEventListener("click", remove);
-      setTimeout(remove, 4000);
+      setTimeout(remove, 4500);
     }
   </script>
 </body>

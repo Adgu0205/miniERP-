@@ -637,7 +637,7 @@
           }
           buttons.push(`<button class="btn btn-secondary" id="btn-drawer-edit-po" style="width:100%;">✏️ Edit Order</button>`);
           if (['draft', 'confirmed', 'partially_received'].includes(status)) {
-            buttons.push(`<button class="btn btn-secondary" id="btn-drawer-cancel-po" style="width:100%; color:#ef4444; border-color:#ef4444;">Cancel Order</button>`);
+            buttons.push(`<button class="btn btn-secondary" id="btn-drawer-cancel-po" style="width:100%; color:var(--red); border-color:rgba(243,139,168,0.4);">Cancel Order</button>`);
           }
           actionsContainer.innerHTML = buttons.join('');
         }

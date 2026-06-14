@@ -99,8 +99,8 @@
             <td><span style="font-size:12px; color:var(--text-secondary);">{{ p.category }}</span></td>
             <td style="text-align:right;">₹{{ p.cost_price|floatformat:2 }}</td>
             <td style="text-align:center; font-weight:600;">{{ p.on_hand }}</td>
-            <td style="text-align:center; color:{% if p.reserved > 0 %}#ef4444{% else %}var(--text-muted){% endif %}; font-weight:600;">{{ p.reserved }}</td>
-            <td style="text-align:center; font-weight:700; color:var(--accent-hover);">{{ p.free_to_use }}</td>
+            <td style="text-align:center; color:{% if p.reserved > 0 %}var(--red){% else %}var(--text-muted){% endif %}; font-weight:600;">{{ p.reserved }}</td>
+            <td style="text-align:center; font-weight:700; color:var(--green);">{{ p.free_to_use }}</td>
             <td style="text-align:right; font-weight:700; color:var(--text-primary);">₹{{ p.on_hand|default:0 }}</td>
             <td style="text-align:center;">
               <span class="badge {% if p.status == 'Low Stock' %}badge-cancelled{% elif p.status == 'Active' %}badge-completed{% else %}badge-draft{% endif %}" style="font-size:10px; padding:2px 6px;">
@@ -130,9 +130,9 @@
 
 <!-- P7: Low Stock Alert Section -->
 {% if low_stock %}
-<div class="card-panel" style="margin-top:24px; border-left:4px solid #ef4444;">
+<div class="card-panel" style="margin-top:24px; border-left:4px solid var(--red);">
   <div class="panel-header">
-    <h3 class="panel-title" style="color:#ef4444;">⚠️ Low Stock Alert Section</h3>
+    <h3 class="panel-title" style="color:var(--red);">⚠️ Low Stock Alert Section</h3>
     <span class="badge badge-cancelled">{{ low_stock|length }} Products Below Threshold</span>
   </div>
   <div class="table-responsive">
@@ -152,9 +152,9 @@
           <tr>
             <td style="font-weight:700;">{{ p.sku }}</td>
             <td style="font-weight:600;">{{ p.name }}</td>
-            <td style="text-align:center; color:#ef4444; font-weight:700;">{{ p.free_to_use }}</td>
+            <td style="text-align:center; color:var(--red); font-weight:700;">{{ p.free_to_use }}</td>
             <td style="text-align:center; font-weight:600;">{{ p.reorder_threshold }}</td>
-            <td style="text-align:center; color:#b91c1c; font-weight:700;">-{{ p.reorder_threshold|add:"-"|add:p.free_to_use }}</td>
+            <td style="text-align:center; color:var(--red); font-weight:700;">-{{ p.reorder_threshold|add:"-"|add:p.free_to_use }}</td>
             <td>
               <span class="badge badge-mto" style="font-size:10px;">{{ p.procure_strategy }}-{{ p.procurement_type }}</span>
             </td>
@@ -168,9 +168,9 @@
 
 <!-- P7: Overstock Section -->
 {% if overstocked %}
-<div class="card-panel" style="margin-top:24px; border-left:4px solid #d97706;">
+<div class="card-panel" style="margin-top:24px; border-left:4px solid var(--yellow);">
   <div class="panel-header">
-    <h3 class="panel-title" style="color:#d97706;">📦 Overstock Risk Section</h3>
+    <h3 class="panel-title" style="color:var(--yellow);">📦 Overstock Risk Section</h3>
     <span class="badge badge-progress">{{ overstocked|length }} Products Overstocked</span>
   </div>
   <div class="table-responsive">
@@ -189,7 +189,7 @@
           <tr>
             <td style="font-weight:700;">{{ p.sku }}</td>
             <td style="font-weight:600;">{{ p.name }}</td>
-            <td style="text-align:center; color:#d97706; font-weight:700;">{{ p.on_hand }}</td>
+            <td style="text-align:center; color:var(--yellow); font-weight:700;">{{ p.on_hand }}</td>
             <td style="text-align:center; font-weight:600;">{{ p.reorder_threshold }}</td>
             <td style="text-align:center; font-size:12px; color:var(--text-secondary);">{{ p.on_hand }} / {{ p.reorder_threshold }} threshold</td>
           </tr>
@@ -202,9 +202,9 @@
 
 <!-- P7: Recently Changed Products (from real ledger data) -->
 {% if recently_changed %}
-<div class="card-panel" style="margin-top:24px; border-left:4px solid #10b981;">
+<div class="card-panel" style="margin-top:24px; border-left:4px solid var(--green);">
   <div class="panel-header">
-    <h3 class="panel-title" style="color:var(--accent-hover);">🔄 Recently Moved Products (Last 7 Days)</h3>
+    <h3 class="panel-title" style="color:var(--green);">🔄 Recently Moved Products (Last 7 Days)</h3>
     <a href="{% url 'inventory_movements' %}" class="btn btn-secondary btn-sm">View All Movements</a>
   </div>
   <div style="display:flex; flex-wrap:wrap; gap:12px; padding-top:4px;">
@@ -219,7 +219,7 @@
           </div>
           <div>
             <span style="font-size:10px; text-transform:uppercase; color:var(--text-secondary);">Free</span>
-            <div style="font-weight:700; color:var(--accent-hover);">{{ p.free_to_use }}</div>
+            <div style="font-weight:700; color:var(--green);">{{ p.free_to_use }}</div>
           </div>
         </div>
       </div>

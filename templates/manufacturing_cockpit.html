@@ -37,20 +37,24 @@
   }
 
   .badge-confirmed {
-    background-color: #dbeafe;
-    color: #1e40af;
+    background: var(--blue-bg);
+    color: var(--blue);
+    border: 1px solid rgba(137,180,250,0.2);
   }
   .badge-progress {
-    background-color: #fef3c7;
-    color: #92400e;
+    background: var(--yellow-bg);
+    color: var(--yellow);
+    border: 1px solid rgba(249,226,175,0.2);
   }
   .badge-received {
-    background-color: #d1fae5;
-    color: #065f46;
+    background: var(--green-bg);
+    color: var(--green);
+    border: 1px solid rgba(166,227,161,0.2);
   }
   .badge-cancelled {
-    background-color: #fee2e2;
-    color: #991b1b;
+    background: var(--red-bg);
+    color: var(--red);
+    border: 1px solid rgba(243,139,168,0.2);
   }
 
   /* Workflow Steps chevron layout */
@@ -85,8 +89,8 @@
   }
 
   .workflow-step.active-cancelled {
-    background-color: #fee2e2;
-    color: #b91c1c;
+    background: var(--red-bg);
+    color: var(--red);
   }
 
   /* Form Elements */
@@ -150,7 +154,7 @@
   .remove-btn {
     background: none;
     border: none;
-    color: #ef4444;
+    color: var(--red);
     cursor: pointer;
     font-weight: bold;
     padding: 2px 6px;
@@ -158,7 +162,8 @@
   }
 
   .remove-btn:hover {
-    color: #b91c1c;
+    color: var(--red);
+    opacity: 0.8;
   }
 
   /* View Switcher */
@@ -588,16 +593,16 @@
               <!-- Stage buttons -->
               {% if selected_mo.status == 'draft' %}
                 <button class="btn btn-primary btn-sm" id="btn-cockpit-confirm-mo" data-id="{{ selected_mo.id }}">Confirm</button>
-                <button class="btn btn-secondary btn-sm" id="btn-cockpit-cancel-mo" data-id="{{ selected_mo.id }}" style="color:#ef4444; border-color:#ef4444;">Cancel MO</button>
+                <button class="btn btn-secondary btn-sm" id="btn-cockpit-cancel-mo" data-id="{{ selected_mo.id }}" style="color:var(--red); border-color:rgba(243,139,168,0.4);">Cancel MO</button>
                 <button class="btn btn-primary btn-sm" id="btn-cockpit-save-mo" data-id="{{ selected_mo.id }}" style="background-color: var(--accent-hover);">Save Changes</button>
               {% elif selected_mo.status == 'confirmed' %}
                 <button class="btn btn-primary btn-sm" id="btn-cockpit-start-mo" data-id="{{ selected_mo.id }}">Start</button>
                 <button class="btn btn-primary btn-sm" id="btn-cockpit-complete-mo" data-id="{{ selected_mo.id }}">Produce</button>
-                <button class="btn btn-secondary btn-sm" id="btn-cockpit-cancel-mo" data-id="{{ selected_mo.id }}" style="color:#ef4444; border-color:#ef4444;">Cancel MO</button>
+                <button class="btn btn-secondary btn-sm" id="btn-cockpit-cancel-mo" data-id="{{ selected_mo.id }}" style="color:var(--red); border-color:rgba(243,139,168,0.4);">Cancel MO</button>
                 <button class="btn btn-primary btn-sm" id="btn-cockpit-save-mo" data-id="{{ selected_mo.id }}" style="background-color: var(--accent-hover);">Save Changes</button>
               {% elif selected_mo.status == 'in_progress' %}
                 <button class="btn btn-primary btn-sm" id="btn-cockpit-complete-mo" data-id="{{ selected_mo.id }}">Produce</button>
-                <button class="btn btn-secondary btn-sm" id="btn-cockpit-cancel-mo" data-id="{{ selected_mo.id }}" style="color:#ef4444; border-color:#ef4444;">Cancel MO</button>
+                <button class="btn btn-secondary btn-sm" id="btn-cockpit-cancel-mo" data-id="{{ selected_mo.id }}" style="color:var(--red); border-color:rgba(243,139,168,0.4);">Cancel MO</button>
                 <button class="btn btn-primary btn-sm" id="btn-cockpit-save-mo" data-id="{{ selected_mo.id }}" style="background-color: var(--accent-hover);">Save Changes</button>
               {% elif selected_mo.status == 'quality_check' %}
                 <button class="btn btn-primary btn-sm" id="btn-cockpit-complete-mo" data-id="{{ selected_mo.id }}">Pass QC &amp; Complete</button>
