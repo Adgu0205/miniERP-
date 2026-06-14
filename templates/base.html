@@ -17,25 +17,69 @@
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
+    :root{--ring:#2b5fa6;--brand:#2b5fa6;--brand2:#0f766e}
     [x-cloak]{display:none!important}
-    body{font-family:ui-sans-serif,system-ui,'Segoe UI',sans-serif}
-    .inp{width:100%;border-radius:.375rem;border:1px solid #cbd5e1;background:#fff;padding:.5rem .75rem;font-size:.875rem;outline:none}
-    .inp:focus{box-shadow:0 0 0 2px #8b5cf6}
-    .dark .inp{border-color:#475569;background:#1e293b;color:#f1f5f9}
-    .card{background:#fff;border:1px solid #e2e8f0;border-radius:.75rem}
-    .dark .card{background:#0f172a;border-color:#1e293b}
+    *{scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}
+    .dark *{scrollbar-color:#334155 transparent}
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px}
+    .dark ::-webkit-scrollbar-thumb{background:#334155}
+    body{font-family:ui-sans-serif,system-ui,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+
+    /* form controls */
+    .inp{width:100%;border-radius:.5rem;border:1px solid #cbd5e1;background:#fff;padding:.5rem .75rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}
+    .inp:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(43,95,166,.16)}
+    .dark .inp{border-color:#334155;background:#0b1220;color:#f1f5f9}
+    label{font-weight:500}
+
+    /* buttons */
+    .btn{display:inline-flex;align-items:center;gap:.4rem;border-radius:.5rem;padding:.5rem .9rem;font-size:.825rem;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--brand);color:#fff}
+    .btn-primary:hover{background:#244f8a}
+    .btn-soft{background:#f1f5f9;color:#334155;border-color:#e2e8f0}
+    .btn-soft:hover{background:#e2e8f0}
+    .dark .btn-soft{background:#1e293b;color:#e2e8f0;border-color:#334155}
+    .dark .btn-soft:hover{background:#334155}
+    .btn-success{background:var(--brand2);color:#fff}.btn-success:hover{background:#0c5d56}
+    .btn-info{background:var(--brand);color:#fff}.btn-info:hover{background:#244f8a}
+    .btn-warn{background:#b45309;color:#fff}.btn-warn:hover{background:#92400e}
+    .btn-danger-soft{background:#f1f5f9;color:#b91c1c;border-color:#e2e8f0}.btn-danger-soft:hover{background:#fee2e2}
+    .dark .btn-danger-soft{background:#1e293b;color:#fda4af;border-color:#334155}
+
+    /* surfaces */
+    .card{background:#fff;border:1px solid #e9eef5;border-radius:.85rem;box-shadow:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.03)}
+    .dark .card{background:#0f172a;border-color:#1e293b;box-shadow:none}
+    .chip{display:inline-flex;align-items:center;border-radius:9999px;padding:.1rem .55rem;font-size:.7rem;font-weight:600}
+
+    /* tables */
     table.erp{width:100%;font-size:.875rem;border-collapse:collapse}
-    table.erp th{text-align:left;font-weight:600;color:#64748b;padding:.6rem .75rem;border-bottom:1px solid #e2e8f0}
-    table.erp td{padding:.55rem .75rem;border-bottom:1px solid #f1f5f9}
-    .dark table.erp th{border-color:#1e293b}
-    .dark table.erp td{border-color:#1e293b}
+    table.erp th{text-align:left;font-weight:600;color:#64748b;font-size:.72rem;letter-spacing:.03em;text-transform:uppercase;padding:.6rem .75rem;border-bottom:1px solid #e8edf3;background:#fafbfc}
+    .dark table.erp th{border-color:#1e293b;background:#0b1220;color:#94a3b8}
+    table.erp td{padding:.6rem .75rem;border-bottom:1px solid #f1f5f9}
+    .dark table.erp td{border-color:#172033}
     table.erp tbody tr:hover{background:#f8fafc}
-    .dark table.erp tbody tr:hover{background:#1e293b}
-    /* let alignment utilities win over the base th/td rules so numeric
-       column headers line up with their (right-aligned) values */
+    .dark table.erp tbody tr:hover{background:#0b1220}
     table.erp th.text-right,table.erp td.text-right{text-align:right}
     table.erp th.text-center,table.erp td.text-center{text-align:center}
     table.erp th,table.erp td{vertical-align:middle}
+
+    /* filter pills */
+    .fbtn{display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .75rem;border-radius:9999px;font-size:.78rem;font-weight:500;background:#f1f5f9;color:#475569;transition:all .15s}
+    .fbtn:hover{background:#e2e8f0}
+    .fbtn.on{background:var(--brand);color:#fff}
+    .dark .fbtn{background:#1e293b;color:#cbd5e1}.dark .fbtn:hover{background:#334155}
+    /* page title block */
+    .page-title{font-size:1.25rem;font-weight:600;line-height:1.2}
+    .page-sub{font-size:.72rem;color:#94a3b8;margin-top:.1rem}
+    .linkrow{cursor:pointer}
+    .linkrow td:first-child{color:var(--brand);font-weight:600}
+    .dark .linkrow td:first-child{color:#7ab0ea}
+    /* sidebar nav */
+    .nav-link{display:flex;align-items:center;gap:.7rem;margin:.1rem .5rem;padding:.55rem .7rem;border-radius:.6rem;color:#94a3b8;transition:all .15s}
+    .nav-link:hover{background:rgba(148,163,184,.1);color:#fff}
+    .nav-link.active{background:rgba(43,95,166,.22);color:#fff;box-shadow:inset 2px 0 0 var(--brand)}
+    @media print{ aside,header,.no-print{display:none!important} main{padding:0!important} .card{box-shadow:none;border:1px solid #ddd} }
   </style>
 </head>
 <body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100">
@@ -43,36 +87,42 @@
 <div class="flex min-h-screen">
   <!-- Sidebar -->
   <aside x-show="sidebar" x-cloak
-         class="w-60 shrink-0 bg-slate-900 text-slate-300 flex flex-col">
-    <div class="h-14 flex items-center gap-2 px-4 border-b border-slate-800">
-      <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 grid place-items-center">
+         class="w-60 shrink-0 flex flex-col text-slate-300"
+         style="background:linear-gradient(180deg,#0b1120,#0f172a)">
+    <div class="h-14 flex items-center gap-2.5 px-4 border-b border-white/5">
+      <div class="h-9 w-9 rounded-xl grid place-items-center" style="background:linear-gradient(135deg,var(--brand),var(--brand2))">
         <svg class="h-5 w-5" viewBox="0 0 64 64" fill="none" stroke="white" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
           <path d="M32 12 L50 21 L32 30 L14 21 Z"/><path d="M14 21 V43 L32 52 V30"/><path d="M50 21 V43 L32 52"/></svg>
       </div>
-      <span class="font-semibold text-white">ProcurERP</span>
+      <div class="leading-tight">
+        <div class="font-semibold text-white">ProcurERP</div>
+        <div class="text-[10px] text-slate-500 -mt-0.5">From Demand to Delivery</div>
+      </div>
     </div>
-    <nav class="flex-1 overflow-y-auto py-3 space-y-0.5 text-sm">
+    <div class="px-4 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600">Menu</div>
+    <nav class="flex-1 overflow-y-auto pb-3 text-sm">
       {% for item in nav_items %}
-      <a href="{% url item.urlname %}"
-         class="flex items-center gap-3 px-4 py-2 hover:bg-slate-800 hover:text-white transition
-                {% if item.active %}bg-slate-800 text-white border-l-2 border-violet-500{% endif %}">
-        <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ item.icon }}"/></svg>
+      <a href="{% url item.urlname %}" class="nav-link {% if item.active %}active{% endif %}">
+        <svg class="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ item.icon }}"/></svg>
         {{ item.label }}
       </a>
       {% endfor %}
     </nav>
-    <div class="p-3 border-t border-slate-800 text-xs text-slate-500">
-      Inventory-driven ERP
+    <div class="p-3 border-t border-white/5 text-xs text-slate-500 flex items-center gap-2">
+      <span class="h-2 w-2 rounded-full bg-slate-500"></span> Inventory-driven ERP
     </div>
   </aside>
 
   <!-- Main -->
   <div class="flex-1 flex flex-col min-w-0">
-    <header class="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center gap-4 px-4">
-      <button @click="sidebar=!sidebar" class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+    <header class="h-14 sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 px-4 shadow-sm">
+      <button @click="sidebar=!sidebar" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-      <nav class="text-sm text-slate-500">{% block breadcrumb %}Dashboard{% endblock %}</nav>
+      <nav class="text-sm text-slate-500 flex items-center gap-1.5">
+        <span class="text-slate-400">ProcurERP</span><span class="text-slate-300 dark:text-slate-600">/</span>
+        <span class="font-medium text-slate-700 dark:text-slate-200">{% block breadcrumb %}Dashboard{% endblock %}</span>
+      </nav>
       <div class="ml-auto flex items-center gap-3">
         <!-- Smart Alerts bell -->
         <div class="relative" x-data="{ open:false }">
@@ -87,12 +137,12 @@
             <a href="{{ a.url }}" class="block px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
               <div class="text-sm flex items-center gap-2">
                 <span>{{ a.icon }}</span>
-                <span class="font-medium {% if a.level == 'danger' %}text-rose-500{% else %}text-amber-500{% endif %}">{{ a.title }}</span>
+                <span class="font-medium {% if a.level == 'danger' %}text-rose-500{% else %}text-slate-500{% endif %}">{{ a.title }}</span>
               </div>
               <div class="text-xs text-slate-500 ml-6">{{ a.detail }}</div>
             </a>
             {% empty %}
-            <div class="px-2 py-6 text-center text-sm text-emerald-600">All clear ✅ No alerts.</div>
+            <div class="px-2 py-6 text-center text-sm text-slate-600">All clear ✅ No alerts.</div>
             {% endfor %}
           </div>
         </div>
@@ -100,18 +150,21 @@
           <svg x-show="!dark" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
           <svg x-show="dark" x-cloak class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36l-1.42-1.42M7.05 7.05L5.64 5.64m12.72 0l-1.42 1.42M7.05 16.95l-1.41 1.41M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         </button>
-        <div class="text-right leading-tight hidden sm:block">
-          <div class="text-sm font-medium">{{ user.get_username }}</div>
-          <div class="text-xs text-slate-500">{{ user.profile.get_role_display }}</div>
+        <div class="flex items-center gap-2 pl-1">
+          <div class="h-8 w-8 rounded-full grid place-items-center text-white text-xs font-bold" style="background:linear-gradient(135deg,var(--brand),var(--brand2))">{{ user.get_username|slice:":1"|upper }}</div>
+          <div class="text-right leading-tight hidden sm:block">
+            <div class="text-sm font-medium">{{ user.get_username }}</div>
+            <div class="text-xs text-slate-500">{{ user.profile.get_role_display }}</div>
+          </div>
         </div>
-        <a href="{% url 'users:logout' %}" class="text-sm px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700">Logout</a>
+        <a href="{% url 'users:logout' %}" class="btn btn-soft">Logout</a>
       </div>
     </header>
 
     <main class="flex-1 p-5 overflow-x-hidden">
       {% if messages %}
         {% for m in messages %}
-        <div class="mb-3 rounded-md px-4 py-2 text-sm bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800">{{ m }}</div>
+        <div class="mb-3 rounded-md px-4 py-2 text-sm bg-slate-50 text-slate-800 border border-slate-200 dark:bg-slate-900/30 dark:text-slate-200 dark:border-slate-800">{{ m }}</div>
         {% endfor %}
       {% endif %}
       {% block content %}{% endblock %}

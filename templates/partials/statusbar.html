@@ -1,0 +1,15 @@
+{% comment %}steps=[{label,done,current}], cancelled=bool{% endcomment %}
+<div class="flex items-center flex-wrap gap-1">
+  {% if cancelled %}
+    <span class="chip bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 px-3 py-1">Cancelled</span>
+  {% else %}
+    {% for s in steps %}
+    <div class="flex items-center">
+      <span class="chip px-3 py-1 {% if s.current %}text-white{% elif s.done %}bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300{% else %}bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500{% endif %}" {% if s.current %}style="background:var(--brand)"{% endif %}>
+        {% if s.done %}✓ {% endif %}{{ s.label }}
+      </span>
+      {% if not forloop.last %}<span class="mx-1 text-slate-300 dark:text-slate-600">›</span>{% endif %}
+    </div>
+    {% endfor %}
+  {% endif %}
+</div>

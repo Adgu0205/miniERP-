@@ -1,9 +1,8 @@
-{% comment %}status=raw value, label=display text{% endcomment %}
+{% comment %}status=raw value, label=display text — blue=in-progress, teal=complete{% endcomment %}
 <span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium
-  {% if status == 'draft' or status == 'pending' %}bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200
-  {% elif status == 'confirmed' %}bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300
-  {% elif status == 'in_progress' %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
-  {% elif status == 'partial' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300
-  {% elif status == 'delivered' or status == 'received' or status == 'done' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+  {% if status == 'draft' or status == 'pending' %}bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400
+  {% elif status == 'confirmed' %}bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300
+  {% elif status == 'in_progress' or status == 'partial' %}bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200
+  {% elif status == 'delivered' or status == 'received' or status == 'done' %}bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200
   {% elif status == 'cancelled' %}bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300
-  {% else %}bg-slate-200 text-slate-700{% endif %}">{{ label }}</span>
+  {% else %}bg-slate-100 text-slate-600{% endif %}">{{ label }}</span>
