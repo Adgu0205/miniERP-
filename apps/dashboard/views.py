@@ -37,10 +37,16 @@ def metrics():
     mo = ManufacturingOrder.objects.all()
     live = so.exclude(status=SOStatus.CANCELLED)
 
+    # Period-over-period deltas — only meaningful for *flow* metrics
+    # (things that happen within a window). State snapshots have no prior value.
     rev_30 = _money(live.filter(order_date__gte=p30))
     rev_prev = _money(live.filter(order_date__gte=p60, order_date__lt=p30))
     so_30 = so.filter(order_date__gte=p30).count()
     so_prev = so.filter(order_date__gte=p60, order_date__lt=p30).count()
+    po_30 = po.filter(order_date__gte=p30).count()
+    po_prev = po.filter(order_date__gte=p60, order_date__lt=p30).count()
+    mo_30 = mo.filter(created_at__date__gte=p30).count()
+    mo_prev = mo.filter(created_at__date__gte=p60, created_at__date__lt=p30).count()
 
     pending = so.filter(status__in=[SOStatus.CONFIRMED, SOStatus.PARTIAL]).count()
     delayed = (so.filter(deadline__lt=today)
@@ -53,8 +59,9 @@ def metrics():
         "total_sales": so.count(), "sales_delta": _delta(so_30, so_prev),
         "pending_deliveries": pending,
         "mfg_orders": mo.exclude(status__in=[MOStatus.DONE, MOStatus.CANCELLED]).count(),
+        "mfg_delta": _delta(mo_30, mo_prev),
         "delayed_orders": delayed,
-        "purchase_orders": po.count(),
+        "purchase_orders": po.count(), "purchase_delta": _delta(po_30, po_prev),
         "inventory_value": float(inv_value),
         "low_stock": low,
         "fulfilment": _fulfilment_rate(so),
