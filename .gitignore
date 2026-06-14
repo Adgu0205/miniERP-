@@ -9,3 +9,4 @@ db.sqlite3
 .remember/
 .vscode/
 .idea/
+erp_audit_report.md
