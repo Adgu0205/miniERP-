@@ -1,95 +1,457 @@
 {% extends "base.html" %}
 
-{% block title %}Audit Trail{% endblock %}
-{% block heading %}Audit Trail Center{% endblock %}
+{% block title %}Audit logs{% endblock %}
+{% block heading %}Audit logs{% endblock %}
 
 {% block content %}
+<style>
+  /* Custom dashboard styles for Audit Logs */
+  .audit-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .audit-kpi-card {
+    border-radius: var(--border-radius-lg);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-fast);
+    text-align: center;
+  }
+  
+  .audit-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .audit-kpi-card.total-logs {
+    background-color: #0f3b5f;
+    border: 1px solid #174d75;
+  }
+  
+  .audit-kpi-card.create-actions {
+    background-color: #1e6035;
+    border: 1px solid #287a45;
+  }
+  
+  .audit-kpi-card.update-actions {
+    background-color: #92400e;
+    border: 1px solid #ad5116;
+  }
+  
+  .audit-kpi-card.delete-actions {
+    background-color: #be123c;
+    border: 1px solid #d91c49;
+  }
+  
+  .kpi-label {
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  
+  .kpi-number {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    line-height: 1;
+  }
+  
+  .kpi-subtext {
+    font-size: 11px;
+    opacity: 0.75;
+  }
+
+  .filter-panel {
+    background-color: var(--bg-primary);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    padding: 16px 24px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+    flex: 1;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .filter-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .filter-input {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 6px 12px;
+    font-size: 13px;
+    height: 36px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    outline: none;
+    transition: var(--transition-fast);
+  }
+
+  .filter-input:focus {
+    border-color: var(--accent-color);
+  }
+
+  .btn-filter {
+    background-color: #1e40af;
+    color: #ffffff;
+    border: 1px solid #1e40af;
+    height: 36px;
+    padding: 0 16px;
+    font-weight: 600;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    transition: var(--transition-fast);
+  }
+
+  .btn-filter:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+  }
+
+  .btn-reset {
+    background-color: #b91c1c;
+    color: #ffffff;
+    border: 1px solid #b91c1c;
+    height: 36px;
+    padding: 0 16px;
+    font-weight: 600;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    text-decoration: none;
+    transition: var(--transition-fast);
+  }
+
+  .btn-reset:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+  }
+
+  .btn-export {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    height: 36px;
+    padding: 0 12px;
+    font-weight: 600;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    text-decoration: none;
+    transition: var(--transition-fast);
+  }
+
+  .btn-export:hover {
+    background-color: var(--border-color);
+  }
+
+  .pager-controls {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    height: 36px;
+  }
+
+  .pager-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-right: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: var(--transition-fast);
+  }
+
+  .pager-item:last-child {
+    border-right: none;
+  }
+
+  .pager-item:hover:not(.disabled):not(.active) {
+    background-color: var(--bg-tertiary);
+  }
+
+  .pager-item.active {
+    background-color: #1e40af;
+    color: #ffffff;
+    font-weight: 600;
+    border-color: #1e40af;
+  }
+
+  .pager-item.disabled {
+    color: var(--text-muted);
+    cursor: not-allowed;
+    background-color: var(--bg-secondary);
+  }
+
+  /* Table styling enhancements */
+  .audit-panel {
+    background-color: var(--bg-primary);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+  }
+
+  .audit-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-block;
+  }
+
+  .badge-create {
+    background-color: #e6f4ea;
+    color: #137333;
+  }
+
+  .badge-update {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+
+  .badge-delete {
+    background-color: #fce8e6;
+    color: #c5221f;
+  }
+</style>
+
+<!-- KPI Cards Grid -->
+<div class="audit-kpi-grid">
+  <!-- Total Logs Card -->
+  <div class="audit-kpi-card total-logs">
+    <span class="kpi-label">Total Logs</span>
+    <span class="kpi-number">{{ total_logs }}</span>
+    <span class="kpi-subtext">All time logs</span>
+  </div>
+  
+  <!-- Create Actions Card -->
+  <div class="audit-kpi-card create-actions">
+    <span class="kpi-label">Create Actions</span>
+    <span class="kpi-number">{{ create_actions }}</span>
+    <span class="kpi-subtext">Records Created</span>
+  </div>
+  
+  <!-- Update Actions Card -->
+  <div class="audit-kpi-card update-actions">
+    <span class="kpi-label">Update Actions</span>
+    <span class="kpi-number">{{ update_actions }}</span>
+    <span class="kpi-subtext">Records Updated</span>
+  </div>
+  
+  <!-- Delete Actions Card -->
+  <div class="audit-kpi-card delete-actions">
+    <span class="kpi-label">Delete Actions</span>
+    <span class="kpi-number">{{ delete_actions }}</span>
+    <span class="kpi-subtext">Records Deleted</span>
+  </div>
+</div>
+
 <!-- Filter Panel -->
-<div class="card-panel" style="margin-bottom:20px;">
-  <form method="GET" action="{% url 'audit_logs' %}" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
-    <div class="form-group" style="flex:2; min-width:200px;">
-      <label style="font-size:11px; text-transform:uppercase; color:var(--text-secondary);">Module</label>
-      <select name="module" class="form-control" style="padding:7px 10px; font-size:13px;">
+<div class="filter-panel">
+  <form class="filter-form" method="GET" action="{% url 'audit_logs' %}">
+    <!-- Date Range -->
+    <div class="filter-group" style="min-width: 250px;">
+      <span class="filter-label">Date Range</span>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <input type="date" name="date_from" class="filter-input" value="{{ date_from }}" style="flex: 1;">
+        <span style="color: var(--text-muted); font-size: 12px;">to</span>
+        <input type="date" name="date_to" class="filter-input" value="{{ date_to }}" style="flex: 1;">
+      </div>
+    </div>
+
+    <!-- User Selection -->
+    <div class="filter-group" style="min-width: 150px;">
+      <span class="filter-label">User</span>
+      <select name="user" class="filter-input">
+        <option value="">All Users</option>
+        {% for u in users %}
+          <option value="{{ u }}" {% if user_filter == u %}selected{% endif %}>{{ u }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Module Selection -->
+    <div class="filter-group" style="min-width: 150px;">
+      <span class="filter-label">Module</span>
+      <select name="module" class="filter-input">
         <option value="">All Modules</option>
         {% for mod in modules %}
           <option value="{{ mod }}" {% if module_filter == mod %}selected{% endif %}>{{ mod }}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="form-group" style="flex:2; min-width:200px;">
-      <label style="font-size:11px; text-transform:uppercase; color:var(--text-secondary);">Search Details</label>
-      <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Search descriptions..." style="padding:7px 10px; font-size:13px;">
+
+    <!-- Actions Filter -->
+    <div class="filter-group" style="min-width: 150px;">
+      <span class="filter-label">Actions</span>
+      <select name="action_type" class="filter-input">
+        <option value="">All Actions</option>
+        <option value="Create" {% if action_filter == "Create" %}selected{% endif %}>Create</option>
+        <option value="Update" {% if action_filter == "Update" %}selected{% endif %}>Update</option>
+        <option value="Delete" {% if action_filter == "Delete" %}selected{% endif %}>Delete</option>
+      </select>
     </div>
-    <div class="form-group" style="flex:1; min-width:140px;">
-      <label style="font-size:11px; text-transform:uppercase; color:var(--text-secondary);">From Date</label>
-      <input type="date" name="date_from" class="form-control" value="{{ date_from }}" style="padding:7px 10px; font-size:13px;">
-    </div>
-    <div class="form-group" style="flex:1; min-width:140px;">
-      <label style="font-size:11px; text-transform:uppercase; color:var(--text-secondary);">To Date</label>
-      <input type="date" name="date_to" class="form-control" value="{{ date_to }}" style="padding:7px 10px; font-size:13px;">
-    </div>
-    <div style="display:flex; gap:8px; padding-bottom:1px;">
-      <button type="submit" class="btn btn-primary btn-sm">Apply</button>
-      <a href="{% url 'audit_logs' %}" class="btn btn-secondary btn-sm">Reset</a>
-      <a href="{% url 'export_audit_csv' %}?module={{ module_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-secondary btn-sm">⬇ Export CSV</a>
+
+    <!-- Submit & Reset -->
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button type="submit" class="btn-filter">
+        <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.2 0-2.4 0-3.6.4M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+        </svg>
+        Filter
+      </button>
+      <a href="{% url 'audit_logs' %}" class="btn-reset">Reset</a>
+      <a href="{% url 'export_audit_csv' %}?user={{ user_filter }}&module={{ module_filter }}&action_type={{ action_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn-export" title="Export CSV">
+        ⬇ Export
+      </a>
     </div>
   </form>
+
+  <!-- Pagination on Right side of Filter Panel -->
+  <div style="display: flex; align-items: center;">
+    {% if page_obj.has_other_pages %}
+      <div class="pager-controls">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}&date_from={{ date_from }}&date_to={{ date_to }}&user={{ user_filter }}&module={{ module_filter }}&action_type={{ action_filter }}&search={{ search }}" class="pager-item">&lt;</a>
+        {% else %}
+          <span class="pager-item disabled">&lt;</span>
+        {% endif %}
+
+        {% for num in paginator.page_range %}
+          {% if num == page_obj.number %}
+            <span class="pager-item active">{{ num }}</span>
+          {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <a href="?page={{ num }}&date_from={{ date_from }}&date_to={{ date_to }}&user={{ user_filter }}&module={{ module_filter }}&action_type={{ action_filter }}&search={{ search }}" class="pager-item">{{ num }}</a>
+          {% elif num == 1 or num == paginator.num_pages %}
+            <a href="?page={{ num }}&date_from={{ date_from }}&date_to={{ date_to }}&user={{ user_filter }}&module={{ module_filter }}&action_type={{ action_filter }}&search={{ search }}" class="pager-item">{{ num }}</a>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <span class="pager-item disabled">...</span>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}&date_from={{ date_from }}&date_to={{ date_to }}&user={{ user_filter }}&module={{ module_filter }}&action_type={{ action_filter }}&search={{ search }}" class="pager-item">&gt;</a>
+        {% else %}
+          <span class="pager-item disabled">&gt;</span>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
 </div>
 
-<div class="audit-panel card-panel">
+<!-- Log List Panel -->
+<div class="audit-panel">
   <div class="panel-header">
-    <h3 class="panel-title">Audit Log Trail &amp; Tracking</h3>
-    <span style="font-size:12px; color:var(--text-muted);">{{ total_count }} log entries</span>
+    <h3 class="panel-title">Audit Trails</h3>
+    <span style="font-size:12px; color:var(--text-muted);">{{ total_count }} log entries matching filters</span>
   </div>
 
   <div class="table-responsive">
     <table class="erp-table">
       <thead>
         <tr>
-          <th>Timestamp</th>
+          <th>Date &amp; Time</th>
+          <th>User</th>
           <th>Module</th>
-          <th>Event Action</th>
-          <th>Description / Details</th>
-          <th>User/Employee</th>
+          <th>Record Type</th>
+          <th>Record ID</th>
+          <th>Action</th>
+          <th>Field Changed</th>
+          <th>Old Value</th>
+          <th>New Value</th>
         </tr>
       </thead>
-      <tbody id="audit-table-body">
+      <tbody>
         {% for log in logs %}
           <tr>
-            <td style="color:var(--text-muted); font-size:12px; width:180px;">{{ log.timestamp|date:"Y-m-d H:i" }}</td>
-            <td style="width:130px;">
+            <td style="color:var(--text-muted); font-size:12px; font-weight:500;">
+              {{ log.timestamp|date:"d M Y, h:i A" }}
+            </td>
+            <td style="font-weight:600; font-size:13px;">{{ log.user }}</td>
+            <td>
               <span class="badge" style="background-color:var(--bg-tertiary); color:var(--text-primary); border-radius:4px; font-size:11px;">
                 {{ log.module }}
               </span>
             </td>
-            <td style="font-weight:700; width:150px;">{{ log.action }}</td>
-            <td style="color:var(--text-secondary);">{{ log.details }}</td>
-            <td style="font-size:13px; font-weight:600; width:140px;">{{ log.user }}</td>
+            <td style="font-size:13px;">{{ log.record_type|default:"-" }}</td>
+            <td style="font-family: monospace; font-size:13px; font-weight:600; color:var(--text-secondary);">
+              {{ log.record_id|default:"-" }}
+            </td>
+            <td>
+              {% if log.action_type == 'Create' %}
+                <span class="audit-badge badge-create">Created</span>
+              {% elif log.action_type == 'Update' %}
+                <span class="audit-badge badge-update">Updated</span>
+              {% elif log.action_type == 'Delete' %}
+                <span class="audit-badge badge-delete">Deleted</span>
+              {% else %}
+                <span class="audit-badge" style="background-color:var(--bg-tertiary); color:var(--text-primary);">{{ log.action_type }}</span>
+              {% endif %}
+            </td>
+            <td style="font-size:13px; color:var(--text-secondary);">{{ log.field_changed|default:"-" }}</td>
+            <td style="font-size:13px; font-weight:500; color:#c5221f;">{{ log.old_value|default:"-" }}</td>
+            <td style="font-size:13px; font-weight:500; color:#137333;">{{ log.new_value|default:"-" }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="5" style="text-align:center; color:var(--text-muted); padding: 20px 0;">No audit trail traces found.</td>
+            <td colspan="9" style="text-align:center; color:var(--text-muted); padding: 32px 0; font-size:14px;">
+              No audit logs found matching the filters.
+            </td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-
-  <!-- P9: Pagination -->
-  {% if page_obj.has_other_pages %}
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:16px; border-top:1px solid var(--border-color);">
-      <span style="font-size:13px; color:var(--text-muted);">
-        Page {{ page_obj.number }} of {{ paginator.num_pages }} — {{ total_count }} total entries
-      </span>
-      <div style="display:flex; gap:8px;">
-        {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}&module={{ module_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&search={{ search }}" class="btn btn-secondary btn-sm">← Prev</a>
-        {% endif %}
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}&module={{ module_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&search={{ search }}" class="btn btn-secondary btn-sm">Next →</a>
-        {% endif %}
-      </div>
-    </div>
-  {% endif %}
 </div>
 {% endblock %}

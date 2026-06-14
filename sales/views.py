@@ -55,6 +55,9 @@ def sales_pipeline(request):
             'has_chain': len(linked_mos) > 0 or len(linked_pos) > 0
         }
 
+    from audit.models import AuditLog
+    sales_logs = AuditLog.objects.filter(module__in=["Sales", "Procurement"]).order_by('-timestamp')[:50]
+
     context = {
         'role': role,
         'user_info': user_info,
@@ -65,6 +68,7 @@ def sales_pipeline(request):
         'traces': traces,
         'traces_json': json.dumps(traces),
         'next_so_ref': next_so_ref,
+        'sales_logs': sales_logs,
     }
     return render(request, "sales_pipeline.html", context)
 
@@ -129,7 +133,18 @@ def create_sales_order(request):
             so.expected_delivery_date = expected_date
         so.save()
 
-        record_audit(request, "Sales", "Order Creation", f"Sales Order SO-{so.id:03d} created for {customer_name}")
+        record_audit(
+            request, 
+            module="Sales", 
+            action="Order Creation", 
+            details=f"Sales Order SO-{so.id:03d} created for {customer_name}",
+            record_id=f"SO-{so.id:03d}",
+            record_type="Sales Order",
+            field_changed="-",
+            old_value="-",
+            new_value="-",
+            action_type="Create"
+        )
         return JsonResponse({'status': 'success', 'message': 'Sales order draft saved.', 'so_id': so.id})
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)
@@ -236,7 +251,18 @@ def edit_sales_order(request, so_id):
             so.status = 'fully_delivered' if all_delivered else 'partially_delivered'
             so.save()
 
-        record_audit(request, "Sales", "Order Edit", f"Sales Order {so.ref} updated.")
+        record_audit(
+            request, 
+            module="Sales", 
+            action="Order Edit", 
+            details=f"Sales Order {so.ref} updated.",
+            record_id=so.ref,
+            record_type="Sales Order",
+            field_changed="-",
+            old_value="-",
+            new_value="-",
+            action_type="Update"
+        )
         return JsonResponse({'status': 'success', 'message': 'Sales order updated successfully.'})
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
@@ -310,7 +336,18 @@ def confirm_sales_order(request, so_id):
         product.save()
         recalculate_stock_quantity(product.id)
 
-    record_audit(request, "Sales", "Status Change", f"Sales Order SO-{so.id:03d} confirmed")
+    record_audit(
+        request, 
+        module="Sales", 
+        action="Status Change", 
+        details=f"Sales Order SO-{so.id:03d} confirmed",
+        record_id=f"SO-{so.id:03d}",
+        record_type="Sales Order",
+        field_changed="Status",
+        old_value="Draft",
+        new_value="Confirmed",
+        action_type="Update"
+    )
 
     # If user confirmed auto-replenish, execute MTO
     if shortages and trigger_procurement:
@@ -395,7 +432,18 @@ def deliver_sales_order(request, so_id):
         so.status = 'fully_delivered' if all_fully_delivered else 'partially_delivered'
         so.save()
 
-        record_audit(request, "Sales", "Order Delivery", f"Sales Order SO-{so.id:03d} delivery processed. Status is now {so.status.replace('_', ' ')}")
+        record_audit(
+            request, 
+            module="Sales", 
+            action="Order Delivery", 
+            details=f"Sales Order SO-{so.id:03d} delivery processed. Status is now {so.status.replace('_', ' ')}",
+            record_id=f"SO-{so.id:03d}",
+            record_type="Sales Order",
+            field_changed="Status",
+            old_value="Confirmed",
+            new_value=so.status.replace('_', ' ').title(),
+            action_type="Update"
+        )
         create_notification("sales_delivered", f"SO-{so.id:03d} shipment dispatched. Status: {so.status.replace('_', ' ')}")
 
         return JsonResponse({'status': 'success', 'message': 'Delivery processed successfully.'})
@@ -554,7 +602,18 @@ def cancel_sales_order(request, so_id):
     so.status = 'cancelled'
     so.save()
 
-    record_audit(request, "Sales", "Order Cancelled", f"Sales Order {so.ref} cancelled. Reserved stock released.")
+    record_audit(
+        request, 
+        module="Sales", 
+        action="Order Cancelled", 
+        details=f"Sales Order {so.ref} cancelled. Reserved stock released.",
+        record_id=so.ref,
+        record_type="Sales Order",
+        field_changed="Status",
+        old_value="Confirmed",
+        new_value="Cancelled",
+        action_type="Update"
+    )
     create_notification("sales_delivered", f"{so.ref} has been cancelled. Reserved quantities released back to free stock.")
 
     return JsonResponse({'status': 'success', 'message': f'{so.ref} cancelled successfully.'})

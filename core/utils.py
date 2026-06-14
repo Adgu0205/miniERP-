@@ -2,12 +2,12 @@ from audit.models import AuditLog, Notification
 from products.models import Product
 
 ROLE_ACCESS_MAP = {
-    'admin': ["dashboard", "products_list", "sales_pipeline", "purchase_list", "manufacturing_cockpit", "bom_list", "inventory_valuation", "stock_ledger", "audit_logs"],
+    'admin': ["dashboard", "products_list", "sales_pipeline", "purchase_list", "manufacturing_cockpit", "bom_list", "audit_logs"],
     'sales_user': ["dashboard", "products_list", "sales_pipeline"],
     'purchase_user': ["dashboard", "products_list", "purchase_list"],
     'manufacturing_user': ["dashboard", "manufacturing_cockpit", "bom_list"],
-    'inventory_manager': ["dashboard", "products_list", "inventory_valuation", "stock_ledger"],
-    'business_owner': ["dashboard", "products_list", "sales_pipeline", "purchase_list", "manufacturing_cockpit", "bom_list", "inventory_valuation", "stock_ledger"]
+    'inventory_manager': ["dashboard", "products_list"],
+    'business_owner': ["dashboard", "products_list", "sales_pipeline", "purchase_list", "manufacturing_cockpit", "bom_list"]
 }
 
 ROLE_INFO_MAP = {
@@ -49,13 +49,19 @@ def get_role_permissions(role):
         'is_read_only': role == 'business_owner'
     }
 
-def record_audit(request, module, action, details):
+def record_audit(request, module, action, details, record_id='', record_type='', field_changed='-', old_value='-', new_value='-', action_type='Create'):
     user_name = get_current_user(request)['name']
     AuditLog.objects.create(
         module=module,
         action=action,
         details=details,
-        user=user_name
+        user=user_name,
+        record_id=record_id,
+        record_type=record_type,
+        field_changed=field_changed,
+        old_value=old_value,
+        new_value=new_value,
+        action_type=action_type
     )
 
 def create_notification(notif_type, message):

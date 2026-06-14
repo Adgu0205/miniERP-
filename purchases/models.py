@@ -24,6 +24,9 @@ class PurchaseOrder(models.Model):
         blank=True, null=True, verbose_name='Expected Receipt Date'
     )
 
+    vendor_address = models.TextField(blank=True, default='', verbose_name='Vendor Address')
+    responsible_person = models.CharField(max_length=100, blank=True, default='', verbose_name='Responsible Person')
+
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Total Amount in INR (₹)")
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='draft')
     source_document = models.CharField(max_length=100, blank=True, null=True)
@@ -35,7 +38,7 @@ class PurchaseOrder(models.Model):
 
     @property
     def ref(self):
-        return f"PO-{self.id:03d}"
+        return self.po_number if self.po_number else f"PO-{self.id:03d}"
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

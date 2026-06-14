@@ -1,96 +1,193 @@
 {% extends "base.html" %}
 
 {% block title %}Products Catalog{% endblock %}
-{% block heading %}Product Catalog & Master Inventory{% endblock %}
+{% block heading %}Product Catalog &amp; Master Inventory{% endblock %}
 
 {% block content %}
-<div class="products-panel card-panel">
+
+<style>
+  /* ── List view ── */
+  .prod-row { cursor: pointer; transition: background 0.15s; }
+  .prod-row:hover { background: var(--bg-secondary) !important; }
+
+  /* ── Detail Panel Overlay ── */
+  #prod-detail-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1100;
+    align-items: center;
+    justify-content: center;
+  }
+  #prod-detail-overlay.open { display: flex; }
+
+  #prod-detail-panel {
+    background: var(--bg-primary, #fff);
+    border-radius: 16px;
+    width: 680px;
+    max-width: 96vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    display: flex;
+    flex-direction: column;
+    animation: panelIn 0.22s ease;
+  }
+  @keyframes panelIn {
+    from { opacity:0; transform: scale(0.96) translateY(12px); }
+    to   { opacity:1; transform: scale(1)   translateY(0);     }
+  }
+
+  .detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 28px 18px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    gap: 12px;
+  }
+  .detail-header-left { display: flex; align-items: center; gap: 14px; }
+  .detail-sku-badge {
+    background: var(--accent-light, #e0f2fe);
+    color: var(--accent-hover, #0369a1);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .detail-product-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary, #111);
+    margin: 0;
+  }
+  .detail-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+  .detail-body { padding: 24px 28px; flex: 1; }
+
+  /* Section titles inside detail panel */
+  .detail-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted, #9ca3af);
+    margin: 0 0 14px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+  }
+  .detail-section { margin-bottom: 26px; }
+
+  /* Grid of field cards */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .detail-grid.three-col { grid-template-columns: 1fr 1fr 1fr; }
+
+  .detail-field {
+    background: var(--bg-secondary, #f9fafb);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .detail-field-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted, #9ca3af);
+  }
+  .detail-field-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary, #111);
+  }
+  .detail-field-value.accent  { color: var(--accent-hover, #0369a1); }
+  .detail-field-value.success { color: #16a34a; }
+  .detail-field-value.warn    { color: #b45309; }
+  .detail-field-value.muted   { color: var(--text-muted, #9ca3af); font-weight:400; }
+
+  /* Status / badges */
+  .detail-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .detail-badge.active   { background: var(--accent-light, #e0f2fe); color: var(--accent-hover, #0369a1); }
+  .detail-badge.lowstock { background: #fef3c7; color: #b45309; }
+  .detail-badge.inactive { background: #f3f4f6; color: #6b7280; }
+  .detail-badge.mts      { background: #dcfce7; color: #15803d; }
+  .detail-badge.mto      { background: #ede9fe; color: #7c3aed; }
+  .detail-badge.bom-yes  { background: var(--accent-light, #e0f2fe); color: var(--accent-hover, #0369a1); }
+  .detail-badge.bom-no   { background: #f3f4f6; color: #6b7280; }
+</style>
+
+<!-- ═══════════════════════════════════════════════════════
+     LIST VIEW
+═══════════════════════════════════════════════════════ -->
+<div class="products-panel card-panel" id="list-view-section">
   <div class="panel-header">
-    <h3 class="panel-title">Product Catalog & Master Inventory</h3>
-    <div style="display:flex; gap:12px;">
-      <input type="text" id="search-products-input" placeholder="Search by SKU or name..." class="form-control" style="width:240px; padding: 6px 12px; font-size:13px;">
+    <h3 class="panel-title">Product Catalog &amp; Master Inventory</h3>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <input type="text" id="search-products-input"
+             placeholder="Search by SKU or name..."
+             class="form-control"
+             style="width:240px; padding:6px 12px; font-size:13px;">
+      <button class="btn btn-secondary btn-sm" id="btn-products-logs">Logs</button>
       {% if permissions.can_edit_products and not permissions.is_read_only %}
         <button class="btn btn-primary btn-sm" id="btn-open-create-prod-modal">+ New Product</button>
       {% endif %}
     </div>
   </div>
-  
+
   <div class="table-responsive">
     <table class="erp-table" id="products-list-table">
       <thead>
         <tr>
           <th>SKU</th>
-          <th>Name</th>
-          <th>Category</th>
-          <th style="text-align:right;">Cost Price</th>
+          <th>Product Name</th>
           <th style="text-align:right;">Sales Price</th>
-          <th style="text-align:center;">On Hand</th>
-          <th style="text-align:center;">Reserved</th>
-          <th style="text-align:center;">Free To Use</th>
-          <th>Replenishment Rule</th>
-          <th>Preferred Vendor</th>
-          <th>BoM Recipe</th>
-          <th>Status</th>
-          {% if permissions.can_edit_products and not permissions.is_read_only %}
-            <th>Actions</th>
-          {% endif %}
+          <th style="text-align:right;">Cost Price</th>
+          <th style="text-align:center;">On Hand Qty</th>
         </tr>
       </thead>
       <tbody id="products-table-body">
         {% for p in products %}
-          <tr data-id="{{ p.id }}" data-search="{{ p.sku|lower }} {{ p.name|lower }}">
-            <td style="font-weight:700;">{{ p.sku }}</td>
+          <tr class="prod-row"
+              data-id="{{ p.id }}"
+              data-search="{{ p.sku|lower }} {{ p.name|lower }}"
+              data-name="{{ p.name }}"
+              data-sku="{{ p.sku }}"
+              data-category="{{ p.category }}"
+              data-cost="{{ p.cost_price }}"
+              data-sales="{{ p.sales_price }}"
+              data-onhand="{{ p.on_hand }}"
+              data-reserved="{{ p.reserved }}"
+              data-free="{{ p.free_to_use }}"
+              data-strategy="{{ p.procure_strategy }}"
+              data-type="{{ p.procurement_type }}"
+              data-vendor="{{ p.vendor|default:'' }}"
+              data-threshold="{{ p.reorder_threshold }}"
+              data-status="{{ p.status }}"
+              data-bom="{% if p.id in bom_linked_product_ids %}yes{% else %}no{% endif %}"
+              title="Click to view details">
+            <td style="font-weight:700; color:var(--accent-hover);">{{ p.sku }}</td>
             <td style="font-weight:600; color:var(--text-primary);">{{ p.name }}</td>
-            <td><span style="font-size:12px; color:var(--text-secondary);">{{ p.category }}</span></td>
-            <td style="text-align:right;">₹{{ p.cost_price|floatformat:2 }}</td>
-            <td style="text-align:right;">₹{{ p.sales_price|floatformat:2 }}</td>
-            <td style="text-align:center; font-weight:700; color: #111111;">{{ p.on_hand }}</td>
-            <td style="text-align:center; color:{% if p.reserved > 0 %}#ef4444{% else %}var(--text-muted){% endif %}; font-weight:600;">
-              {{ p.reserved }}
-            </td>
-            <td style="text-align:center; font-weight:700; color:var(--accent-hover);">{{ p.free_to_use }}</td>
-            <td>
-              <span class="badge {% if p.procure_strategy == 'MTO' %}badge-mto{% else %}badge-mts{% endif %}">
-                {{ p.procure_strategy }} - {{ p.procure_type }}
-              </span>
-              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">
-                Min limit: {{ p.reorder_threshold }}
-              </div>
-            </td>
-            <td style="font-size:13px; color:var(--text-secondary);">{{ p.vendor|default:"-" }}</td>
-            <td>
-              {% if p.id in bom_linked_product_ids %}
-                <span style="font-size:12px; color:var(--accent-hover); font-weight:600;">Linked Recipe</span>
-              {% else %}
-                <span style="font-size:12px; color:var(--text-muted);">No Recipe</span>
-              {% endif %}
-            </td>
-            <td>
-              <span class="badge" style="background-color:{% if p.status == 'Low Stock' %}#fef3c7{% else %}var(--accent-light){% endif %}; color:{% if p.status == 'Low Stock' %}#b45309{% else %}var(--accent-hover){% endif %};">
-                {{ p.status }}
-              </span>
-            </td>
-            {% if permissions.can_edit_products and not permissions.is_read_only %}
-              <td>
-                <button class="btn btn-secondary btn-sm edit-prod-btn" 
-                        data-id="{{ p.id }}"
-                        data-name="{{ p.name }}"
-                        data-sku="{{ p.sku }}"
-                        data-category="{{ p.category }}"
-                        data-cost="{{ p.cost_price }}"
-                        data-sales="{{ p.sales_price }}"
-                        data-strategy="{{ p.procure_strategy }}"
-                        data-type="{{ p.procure_type }}"
-                        data-vendor="{{ p.vendor|default:'' }}"
-                        data-threshold="{{ p.reorder_threshold }}"
-                        data-onhand="{{ p.on_hand }}"
-                        style="padding:4px 8px; font-size:11px;">Edit</button>
-              </td>
-            {% endif %}
+            <td style="text-align:right; font-weight:600;">₹{{ p.sales_price|floatformat:2 }}</td>
+            <td style="text-align:right; color:var(--text-secondary);">₹{{ p.cost_price|floatformat:2 }}</td>
+            <td style="text-align:center; font-weight:700; color:#111111;">{{ p.on_hand }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="13" style="text-align:center; color:var(--text-muted);">No products registered.</td>
+            <td colspan="5" style="text-align:center; color:var(--text-muted);">No products registered.</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -98,9 +195,112 @@
   </div>
 </div>
 
-<!-- Modal Form overlay -->
+<!-- ═══════════════════════════════════════════════════════
+     PRODUCT DETAIL PANEL OVERLAY
+═══════════════════════════════════════════════════════ -->
+<div id="prod-detail-overlay">
+  <div id="prod-detail-panel">
+
+    <!-- Header -->
+    <div class="detail-header">
+      <div class="detail-header-left">
+        <span class="detail-sku-badge" id="dp-sku">SKU</span>
+        <h2 class="detail-product-name" id="dp-name">Product Name</h2>
+      </div>
+      <div class="detail-header-actions">
+        {% if permissions.can_edit_products and not permissions.is_read_only %}
+          <button class="btn btn-primary btn-sm" id="dp-btn-new">+ New Product</button>
+          <button class="btn btn-secondary btn-sm" id="dp-btn-edit">✏ Edit</button>
+        {% endif %}
+        <button class="btn btn-secondary btn-sm" id="dp-btn-back">← Back</button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="detail-body">
+
+      <!-- Section 1: Pricing & Stock -->
+      <div class="detail-section">
+        <p class="detail-section-title">Pricing &amp; Stock</p>
+        <div class="detail-grid three-col">
+          <div class="detail-field">
+            <span class="detail-field-label">Sales Price</span>
+            <span class="detail-field-value success" id="dp-sales">—</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-field-label">Cost Price</span>
+            <span class="detail-field-value" id="dp-cost">—</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-field-label">Category</span>
+            <span class="detail-field-value" id="dp-category">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Inventory -->
+      <div class="detail-section">
+        <p class="detail-section-title">Inventory Levels</p>
+        <div class="detail-grid three-col">
+          <div class="detail-field">
+            <span class="detail-field-label">On Hand Quantity</span>
+            <span class="detail-field-value" id="dp-onhand">—</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-field-label">Reserved Quantity</span>
+            <span class="detail-field-value warn" id="dp-reserved">—</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-field-label">Free To Use</span>
+            <span class="detail-field-value accent" id="dp-free">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Procurement -->
+      <div class="detail-section">
+        <p class="detail-section-title">Procurement &amp; Replenishment</p>
+        <div class="detail-grid">
+          <div class="detail-field">
+            <span class="detail-field-label">Procurement Strategy</span>
+            <span class="detail-field-value" id="dp-strategy">—</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-field-label">Procurement Type</span>
+            <span class="detail-field-value" id="dp-type">—</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-field-label">Preferred Vendor</span>
+            <span class="detail-field-value" id="dp-vendor">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Status & BoM -->
+      <div class="detail-section">
+        <p class="detail-section-title">Status &amp; BoM Recipe</p>
+        <div class="detail-grid">
+          <div class="detail-field">
+            <span class="detail-field-label">Product Status</span>
+            <span class="detail-field-value" id="dp-status">—</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-field-label">BoM Recipe</span>
+            <span class="detail-field-value" id="dp-bom">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /detail-body -->
+  </div><!-- /prod-detail-panel -->
+</div><!-- /prod-detail-overlay -->
+
+
+<!-- ═══════════════════════════════════════════════════════
+     CREATE / EDIT MODAL FORM  (unchanged)
+═══════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="product-modal" style="display:none;">
-  <div class="modal-content" style="max-width: 600px;">
+  <div class="modal-content" style="max-width:600px;">
     <div class="modal-header">
       <h3 class="modal-title" id="modal-title-text">Catalog New Product</h3>
       <button class="modal-close" id="close-prod-modal">✕</button>
@@ -118,7 +318,7 @@
             <input type="text" id="prod-sku" class="form-control" required>
           </div>
         </div>
-        
+
         <div class="form-grid">
           <div class="form-group">
             <label for="prod-category">Category</label>
@@ -163,13 +363,10 @@
         </div>
 
         <div class="form-grid">
-          <div class="form-group">
-            <label for="prod-threshold">Reorder Threshold Limit *</label>
-            <input type="number" id="prod-threshold" class="form-control" min="0" required value="5">
-          </div>
           <div class="form-group" id="group-onhand" style="display:none;">
             <label style="opacity:0.6;">Current On-Hand Balance</label>
-            <input type="text" id="prod-onhand-display" class="form-control" disabled style="background-color:var(--bg-secondary);">
+            <input type="text" id="prod-onhand-display" class="form-control" disabled
+                   style="background-color:var(--bg-secondary);">
           </div>
         </div>
       </div>
@@ -181,102 +378,233 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════ -->
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    // Search
-    const searchInput = document.getElementById("search-products-input");
-    searchInput.addEventListener("input", (e) => {
-      const query = e.target.value.toLowerCase();
-      document.querySelectorAll("#products-table-body tr").forEach(row => {
-        if (row.dataset.search.includes(query)) {
-          row.style.display = "";
-        } else {
-          row.style.display = "none";
-        }
+document.addEventListener("DOMContentLoaded", () => {
+
+  // ── Search ──────────────────────────────────────────────
+  document.getElementById("search-products-input").addEventListener("input", e => {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll("#products-table-body tr.prod-row").forEach(row => {
+      row.style.display = row.dataset.search.includes(q) ? "" : "none";
+    });
+  });
+
+  // ── Detail Panel helpers ─────────────────────────────────
+  const overlay   = document.getElementById("prod-detail-overlay");
+  const btnBack   = document.getElementById("dp-btn-back");
+
+  // Close panel
+  const closeDetailPanel = () => overlay.classList.remove("open");
+
+  btnBack.addEventListener("click", closeDetailPanel);
+  // Click outside panel closes it
+  overlay.addEventListener("click", e => { if (e.target === overlay) closeDetailPanel(); });
+
+  // Populate & open panel
+  const openDetailPanel = (d) => {
+    document.getElementById("dp-sku").textContent    = d.sku;
+    document.getElementById("dp-name").textContent   = d.name;
+    document.getElementById("dp-sales").textContent  = "₹" + parseFloat(d.sales).toFixed(2);
+    document.getElementById("dp-cost").textContent   = "₹" + parseFloat(d.cost).toFixed(2);
+    document.getElementById("dp-category").textContent = d.category || "—";
+    document.getElementById("dp-onhand").textContent   = d.onhand;
+    document.getElementById("dp-reserved").textContent = d.reserved;
+    document.getElementById("dp-free").textContent     = d.free;
+
+    // Strategy badge
+    const stratEl = document.getElementById("dp-strategy");
+    stratEl.innerHTML = "";
+    const stratBadge = document.createElement("span");
+    stratBadge.className = "detail-badge " + (d.strategy === "MTO" ? "mto" : "mts");
+    stratBadge.textContent = d.strategy === "MTO" ? "Make To Order (MTO)" : "Make To Stock (MTS)";
+    stratEl.appendChild(stratBadge);
+
+    document.getElementById("dp-type").textContent      = d.type || "None";
+    document.getElementById("dp-vendor").textContent    = d.vendor || "—";
+
+    // Status badge
+    const statusEl = document.getElementById("dp-status");
+    statusEl.innerHTML = "";
+    const sBadge = document.createElement("span");
+    const sClass = d.status === "Active" ? "active" : d.status === "Low Stock" ? "lowstock" : "inactive";
+    sBadge.className = "detail-badge " + sClass;
+    sBadge.textContent = d.status;
+    statusEl.appendChild(sBadge);
+
+    // BoM badge
+    const bomEl = document.getElementById("dp-bom");
+    bomEl.innerHTML = "";
+    const bBadge = document.createElement("span");
+    bBadge.className = "detail-badge " + (d.bom === "yes" ? "bom-yes" : "bom-no");
+    bBadge.textContent = d.bom === "yes" ? "Linked Recipe" : "No Recipe";
+    bomEl.appendChild(bBadge);
+
+    // Wire up Edit button with this product's data
+    {% if permissions.can_edit_products and not permissions.is_read_only %}
+      document.getElementById("dp-btn-edit")._currentData = d;
+    {% endif %}
+
+    overlay.classList.add("open");
+  };
+
+  // Make every row clickable
+  document.querySelectorAll("#products-table-body tr.prod-row").forEach(row => {
+    row.addEventListener("click", () => {
+      openDetailPanel({
+        id:        row.dataset.id,
+        name:      row.dataset.name,
+        sku:       row.dataset.sku,
+        category:  row.dataset.category,
+        cost:      row.dataset.cost,
+        sales:     row.dataset.sales,
+        onhand:    row.dataset.onhand,
+        reserved:  row.dataset.reserved,
+        free:      row.dataset.free,
+        strategy:  row.dataset.strategy,
+        type:      row.dataset.type,
+        vendor:    row.dataset.vendor,
+        threshold: row.dataset.threshold,
+        status:    row.dataset.status,
+        bom:       row.dataset.bom,
       });
     });
-
-    {% if permissions.can_edit_products and not permissions.is_read_only %}
-      const modal = document.getElementById("product-modal");
-      const form = document.getElementById("product-modal-form");
-      const title = document.getElementById("modal-title-text");
-      const skuInput = document.getElementById("prod-sku");
-      const editId = document.getElementById("edit-prod-id");
-
-      const showModal = (editData = null) => {
-        if (editData) {
-          title.innerText = "Modify Product Specifications";
-          editId.value = editData.id;
-          document.getElementById("prod-name").value = editData.name;
-          skuInput.value = editData.sku;
-          skuInput.disabled = true;
-          document.getElementById("prod-category").value = editData.category;
-          document.getElementById("prod-vendor").value = editData.vendor;
-          document.getElementById("prod-cost").value = editData.cost;
-          document.getElementById("prod-sales").value = editData.sales;
-          document.getElementById("prod-strategy").value = editData.strategy;
-          document.getElementById("prod-type").value = editData.type;
-          document.getElementById("prod-threshold").value = editData.threshold;
-          document.getElementById("prod-onhand-display").value = editData.onhand;
-          document.getElementById("group-onhand").style.display = "block";
-          document.getElementById("btn-submit-text").innerText = "Save Changes";
-        } else {
-          title.innerText = "Catalog New Product";
-          editId.value = "";
-          form.reset();
-          skuInput.disabled = false;
-          document.getElementById("group-onhand").style.display = "none";
-          document.getElementById("btn-submit-text").innerText = "Catalog Product";
-        }
-        modal.style.display = "flex";
-      };
-
-      const hideModal = () => modal.style.display = "none";
-
-      document.getElementById("btn-open-create-prod-modal").addEventListener("click", () => showModal(null));
-      document.getElementById("close-prod-modal").addEventListener("click", hideModal);
-      document.getElementById("cancel-prod-modal").addEventListener("click", hideModal);
-
-      document.querySelectorAll(".edit-prod-btn").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          const d = e.target.dataset;
-          showModal({
-            id: d.id, name: d.name, sku: d.sku, category: d.category,
-            cost: d.cost, sales: d.sales, strategy: d.strategy,
-            type: d.type, vendor: d.vendor, threshold: d.threshold, onhand: d.onhand
-          });
-        });
-      });
-
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        
-        const payload = new FormData();
-        payload.append('name', document.getElementById("prod-name").value);
-        payload.append('sku', skuInput.value);
-        payload.append('category', document.getElementById("prod-category").value);
-        payload.append('costPrice', document.getElementById("prod-cost").value);
-        payload.append('salesPrice', document.getElementById("prod-sales").value);
-        payload.append('procureStrategy', document.getElementById("prod-strategy").value);
-        payload.append('procureType', document.getElementById("prod-type").value);
-        payload.append('vendor', document.getElementById("prod-vendor").value);
-        payload.append('reorderThreshold', document.getElementById("prod-threshold").value);
-
-        const url = editId.value ? `/products/edit/${editId.value}/` : '/products/create/';
-
-        fetch(url, { method: 'POST', body: payload })
-          .then(res => res.json())
-          .then(data => {
-            if (data.status === 'success') {
-              showToast(data.message, "success");
-              hideModal();
-              setTimeout(() => window.location.reload(), 1000);
-            } else {
-              showToast(data.message, "error");
-            }
-          });
-      });
-    {% endif %}
   });
+
+  // ── Create / Edit Modal ──────────────────────────────────
+  {% if permissions.can_edit_products and not permissions.is_read_only %}
+    const modal   = document.getElementById("product-modal");
+    const form    = document.getElementById("product-modal-form");
+    const title   = document.getElementById("modal-title-text");
+    const skuInput = document.getElementById("prod-sku");
+    const editId  = document.getElementById("edit-prod-id");
+
+    const showModal = (editData = null) => {
+      if (editData) {
+        title.innerText = "Modify Product Specifications";
+        editId.value = editData.id;
+        document.getElementById("prod-name").value     = editData.name;
+        skuInput.value                                 = editData.sku;
+        skuInput.disabled                              = true;
+        document.getElementById("prod-category").value = editData.category;
+        document.getElementById("prod-vendor").value   = editData.vendor;
+        document.getElementById("prod-cost").value     = editData.cost;
+        document.getElementById("prod-sales").value    = editData.sales;
+        document.getElementById("prod-strategy").value = editData.strategy;
+        document.getElementById("prod-type").value     = editData.type;
+        document.getElementById("prod-onhand-display").value = editData.onhand;
+        document.getElementById("group-onhand").style.display = "block";
+        document.getElementById("btn-submit-text").innerText  = "Save Changes";
+      } else {
+        title.innerText = "Catalog New Product";
+        editId.value = "";
+        form.reset();
+        skuInput.disabled = false;
+        document.getElementById("group-onhand").style.display = "none";
+        document.getElementById("btn-submit-text").innerText  = "Catalog Product";
+      }
+      modal.style.display = "flex";
+    };
+
+    const hideModal = () => modal.style.display = "none";
+
+    // "New Product" in list-view header
+    document.getElementById("btn-open-create-prod-modal").addEventListener("click", () => showModal(null));
+
+    // "New Product" inside detail panel
+    document.getElementById("dp-btn-new").addEventListener("click", () => {
+      closeDetailPanel();
+      showModal(null);
+    });
+
+    // "Edit" inside detail panel
+    document.getElementById("dp-btn-edit").addEventListener("click", function() {
+      const d = this._currentData;
+      if (!d) return;
+      closeDetailPanel();
+      showModal(d);
+    });
+
+    document.getElementById("close-prod-modal").addEventListener("click", hideModal);
+    document.getElementById("cancel-prod-modal").addEventListener("click", hideModal);
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const payload = new FormData();
+      payload.append("name",            document.getElementById("prod-name").value);
+      payload.append("sku",             skuInput.value);
+      payload.append("category",        document.getElementById("prod-category").value);
+      payload.append("costPrice",       document.getElementById("prod-cost").value);
+      payload.append("salesPrice",      document.getElementById("prod-sales").value);
+      payload.append("procureStrategy", document.getElementById("prod-strategy").value);
+      payload.append("procureType",     document.getElementById("prod-type").value);
+      payload.append("vendor",          document.getElementById("prod-vendor").value);
+      // reorderThreshold intentionally omitted — server preserves existing DB value
+
+      const url = editId.value ? `/products/edit/${editId.value}/` : "/products/create/";
+      fetch(url, { method: "POST", body: payload })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === "success") {
+            showToast(data.message, "success");
+            hideModal();
+            setTimeout(() => window.location.reload(), 1000);
+          } else {
+            showToast(data.message, "error");
+          }
+        });
+    });
+  {% endif %}
+
+  // Products Logs Modal Logic
+  const productsLogsModal = document.getElementById("products-logs-modal");
+  document.getElementById("btn-products-logs").addEventListener("click", () => {
+    productsLogsModal.style.display = "flex";
+  });
+});
+function closeProductsLogsModal() {
+  document.getElementById("products-logs-modal").style.display = "none";
+}
 </script>
+
+<!-- AUDIT LOGS MODAL -->
+<div class="modal-overlay" id="products-logs-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 800px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Audit Logs (Module: Products &amp; Inventory)</h3>
+      <button class="modal-close" onclick="closeProductsLogsModal()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+      <table class="erp-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Action</th>
+            <th>Operator</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in product_logs %}
+            <tr style="font-size:12px;">
+              <td style="white-space:nowrap; color:var(--text-muted);">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+              <td style="font-weight:700;">{{ log.action }}</td>
+              <td style="font-weight:600;">{{ log.user }}</td>
+              <td>{{ log.details }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" style="text-align:center; color:var(--text-muted); padding:16px;">No audit logs recorded for Products &amp; Inventory.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeProductsLogsModal()">Close</button>
+    </div>
+  </div>
+</div>
 {% endblock %}

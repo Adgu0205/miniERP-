@@ -18,6 +18,8 @@ class SalesOrder(models.Model):
         verbose_name='Order Number'
     )
     customer_name = models.CharField(max_length=150)
+    customer_address = models.TextField(blank=True, default='', verbose_name='Customer Address')
+    sales_person = models.CharField(max_length=100, blank=True, default='', verbose_name='Sales Person')
     date = models.DateTimeField(auto_now_add=True)
     expected_delivery_date = models.DateField(blank=True, null=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Total Amount in INR (₹)")

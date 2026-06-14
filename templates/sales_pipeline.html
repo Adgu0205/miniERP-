@@ -25,12 +25,12 @@
     color: var(--text-primary);
   }
   .btn-view-switch.active {
-    background-color: var(--primary-color) !important;
+    background-color: var(--accent-hover) !important;
     color: #ffffff !important;
-    border-color: var(--primary-color) !important;
+    border-color: var(--accent-hover) !important;
   }
   #so-search-input:focus {
-    border-color: var(--primary-color);
+    border-color: var(--accent-hover);
     outline: none;
   }
 </style>
@@ -53,6 +53,7 @@
       </button>
     </div>
     
+    <button class="btn btn-secondary btn-sm" id="btn-sales-logs" style="height: 38px;">Logs</button>
     {% if permissions.can_edit_sales and not permissions.is_read_only %}
       <button class="btn btn-primary btn-sm" id="btn-open-create-so-modal" style="height: 38px; display:flex; align-items:center; justify-content:center;">+ Create Sales Order</button>
     {% endif %}
@@ -244,7 +245,7 @@
       <tbody id="so-list-tbody">
         {% for so in sales_orders %}
           <tr class="list-row sales-so-card" data-id="{{ so.id }}" data-customer="{{ so.customer_name }}" data-address="{{ so.customer_address }}" data-salesperson="{{ so.sales_person }}" data-total="{{ so.total_amount }}" data-status="{{ so.status }}" data-date="{{ so.date|date:'c' }}" data-notes="{{ so.notes|escapejs }}" data-expected-date="{{ so.expected_delivery_date|date:'Y-m-d' }}" style="border-bottom:1px solid var(--border-color); cursor:pointer; transition: background-color 0.2s;">
-            <td style="padding:16px; font-weight:700; color:var(--text-primary);">{{ so.ref }}</td>
+            <td style="padding:16px; font-weight:700; color:var(--text-primary);" class="kanban-card-id">{{ so.ref }}</td>
             <td style="padding:16px; color:var(--text-secondary);">{{ so.date|date:"Y-m-d H:i" }}</td>
             <td style="padding:16px; font-weight:600; color:var(--text-primary);">{{ so.customer_name }}</td>
             <td style="padding:16px; color:var(--text-primary);">{{ so.sales_person|default:"N/A" }}</td>
@@ -853,6 +854,75 @@
       if (e.target === drawer) closeDrawer();
     });
 
+    // View Switcher logic
+    const viewKanbanBtn = document.getElementById("btn-view-kanban");
+    const viewListBtn = document.getElementById("btn-view-list");
+    const kanbanContainer = document.querySelector(".kanban-board-container");
+    const listContainer = document.getElementById("so-list-container");
+
+    if (viewKanbanBtn && viewListBtn) {
+      const setView = (view) => {
+        if (view === "list") {
+          kanbanContainer.style.display = "none";
+          listContainer.style.display = "block";
+          viewListBtn.classList.add("active");
+          viewKanbanBtn.classList.remove("active");
+          localStorage.setItem("sales_order_view", "list");
+        } else {
+          kanbanContainer.style.display = "flex";
+          listContainer.style.display = "none";
+          viewKanbanBtn.classList.add("active");
+          viewListBtn.classList.remove("active");
+          localStorage.setItem("sales_order_view", "kanban");
+        }
+      };
+
+      viewKanbanBtn.addEventListener("click", () => setView("kanban"));
+      viewListBtn.addEventListener("click", () => setView("list"));
+
+      const savedView = localStorage.getItem("sales_order_view") || "kanban";
+      setView(savedView);
+    }
+
+    // Real-time search filter logic for both views
+    const searchInput = document.getElementById("so-search-input");
+    if (searchInput) {
+      searchInput.addEventListener("input", (e) => {
+        const q = e.target.value.toLowerCase().trim();
+        
+        // 1. Filter Kanban lanes
+        document.querySelectorAll(".kanban-column").forEach(column => {
+          let visibleCount = 0;
+          column.querySelectorAll(".sales-so-card").forEach(card => {
+            const ref = (card.querySelector(".kanban-card-id")?.innerText || "").toLowerCase();
+            const customer = card.dataset.customer.toLowerCase();
+            const salesperson = (card.dataset.salesperson || '').toLowerCase();
+            
+            if (ref.includes(q) || customer.includes(q) || salesperson.includes(q)) {
+              card.style.display = "block";
+              visibleCount++;
+            } else {
+              card.style.display = "none";
+            }
+          });
+          column.querySelector(".kanban-card-count").innerText = visibleCount;
+        });
+
+        // 2. Filter List view table rows
+        document.querySelectorAll("#so-list-tbody .list-row").forEach(row => {
+          const ref = row.querySelector("td:first-child").innerText.toLowerCase();
+          const customer = row.dataset.customer.toLowerCase();
+          const salesperson = (row.dataset.salesperson || '').toLowerCase();
+          
+          if (ref.includes(q) || customer.includes(q) || salesperson.includes(q)) {
+            row.style.display = "table-row";
+          } else {
+            row.style.display = "none";
+          }
+        });
+      });
+    }
+
     // Create SO Modal
     if (canEditSales && !isReadOnly) {
       const soModal = document.getElementById("so-create-modal");
@@ -921,75 +991,6 @@
 
         recalculateTotals(row);
       };
-
-      // View Switcher logic
-      const viewKanbanBtn = document.getElementById("btn-view-kanban");
-      const viewListBtn = document.getElementById("btn-view-list");
-      const kanbanContainer = document.querySelector(".kanban-board-container");
-      const listContainer = document.getElementById("so-list-container");
-
-      if (viewKanbanBtn && viewListBtn) {
-        const setView = (view) => {
-          if (view === "list") {
-            kanbanContainer.style.display = "none";
-            listContainer.style.display = "block";
-            viewListBtn.classList.add("active");
-            viewKanbanBtn.classList.remove("active");
-            localStorage.setItem("sales_order_view", "list");
-          } else {
-            kanbanContainer.style.display = "flex";
-            listContainer.style.display = "none";
-            viewKanbanBtn.classList.add("active");
-            viewListBtn.classList.remove("active");
-            localStorage.setItem("sales_order_view", "kanban");
-          }
-        };
-
-        viewKanbanBtn.addEventListener("click", () => setView("kanban"));
-        viewListBtn.addEventListener("click", () => setView("list"));
-
-        const savedView = localStorage.getItem("sales_order_view") || "kanban";
-        setView(savedView);
-      }
-
-      // Real-time search filter logic for both views
-      const searchInput = document.getElementById("so-search-input");
-      if (searchInput) {
-        searchInput.addEventListener("input", (e) => {
-          const q = e.target.value.toLowerCase().trim();
-          
-          // 1. Filter Kanban lanes
-          document.querySelectorAll(".kanban-column").forEach(column => {
-            let visibleCount = 0;
-            column.querySelectorAll(".sales-so-card").forEach(card => {
-              const ref = card.querySelector(".kanban-card-id").innerText.toLowerCase();
-              const customer = card.dataset.customer.toLowerCase();
-              const salesperson = (card.dataset.salesperson || '').toLowerCase();
-              
-              if (ref.includes(q) || customer.includes(q) || salesperson.includes(q)) {
-                card.style.display = "block";
-                visibleCount++;
-              } else {
-                card.style.display = "none";
-              }
-            });
-            column.querySelector(".kanban-card-count").innerText = visibleCount;
-          });
-
-          // 2. Filter List view table rows
-          document.querySelectorAll("#so-list-tbody .list-row").forEach(row => {
-            const ref = row.querySelector("td:first-child").innerText.toLowerCase();
-            const customer = row.dataset.customer.toLowerCase();
-            const salesperson = (row.dataset.salesperson || '').toLowerCase();
-            
-            if (ref.includes(q) || customer.includes(q) || salesperson.includes(q)) {
-              row.style.display = "table-row";
-            } else {
-              row.style.display = "none";
-            }
-          });
-        });
-      }
 
       document.getElementById("btn-open-create-so-modal").addEventListener("click", () => {
         linesContainer.innerHTML = '';
@@ -1095,6 +1096,12 @@
     if (urlParams.get('trigger') === 'create' && canEditSales && !isReadOnly) {
       document.getElementById("btn-open-create-so-modal").click();
     }
+
+    // Sales Logs Modal Logic
+    const salesLogsModal = document.getElementById("sales-logs-modal");
+    document.getElementById("btn-sales-logs").addEventListener("click", () => {
+      salesLogsModal.style.display = "flex";
+    });
   });
 
   // AJAX Confirm flow
@@ -1215,5 +1222,47 @@
         });
     };
   }
+function closeSalesLogsModal() {
+  document.getElementById("sales-logs-modal").style.display = "none";
+}
 </script>
+
+<!-- AUDIT LOGS MODAL -->
+<div class="modal-overlay" id="sales-logs-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 800px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Audit Logs (Module: Sales &amp; Procurement)</h3>
+      <button class="modal-close" onclick="closeSalesLogsModal()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+      <table class="erp-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Action</th>
+            <th>Operator</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in sales_logs %}
+            <tr style="font-size:12px;">
+              <td style="white-space:nowrap; color:var(--text-muted);">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+              <td style="font-weight:700;">{{ log.action }}</td>
+              <td style="font-weight:600;">{{ log.user }}</td>
+              <td>{{ log.details }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" style="text-align:center; color:var(--text-muted); padding:16px;">No audit logs recorded for Sales &amp; Procurement.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeSalesLogsModal()">Close</button>
+    </div>
+  </div>
+</div>
 {% endblock %}

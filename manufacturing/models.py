@@ -30,11 +30,17 @@ class BoM(models.Model):
     # Added: created_at timestamp
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
+    # Added: reference field (max 8 characters)
+    reference = models.CharField(
+        max_length=8, blank=True, default='',
+        verbose_name='Reference'
+    )
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         # Auto-generate bom_code if not set
         if not self.bom_code:
-            self.bom_code = f"BOM-{self.id:03d}"
+            self.bom_code = f"BOM-{self.id:06d}"
             BoM.objects.filter(pk=self.pk).update(bom_code=self.bom_code)
 
     def __str__(self):
@@ -122,17 +128,43 @@ class ManufacturingOrder(models.Model):
 
     @property
     def ref(self):
-        return f"MO-{self.id:03d}"
+        return self.mo_number if self.mo_number else f"MO-{self.id:04d}"
+
+    @property
+    def component_status(self):
+        """Check if all components are available for this MO."""
+        if not self.components.exists():
+            return "Available"
+        for comp in self.components.all():
+            needed = comp.to_consume
+            comp_prod = comp.product
+            available = comp_prod.free_to_use
+            if self.status != 'draft':
+                available += needed
+            if available < needed:
+                return "Not Available"
+        return "Available"
+
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         # Auto-populate mo_number after first save
         if not self.mo_number:
-            self.mo_number = f"MO-{self.id:03d}"
+            self.mo_number = f"MO-{self.id:04d}"
             ManufacturingOrder.objects.filter(pk=self.pk).update(mo_number=self.mo_number)
 
     def __str__(self):
         return f"{self.ref} ({self.product.name})"
+
+
+class ManufacturingOrderComponent(models.Model):
+    manufacturing_order = models.ForeignKey(ManufacturingOrder, on_delete=models.CASCADE, related_name="components")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    to_consume = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='To Consume')
+    consumed = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='Consumed')
+
+    def __str__(self):
+        return f"{self.product.name} component for {self.manufacturing_order.ref}"
 
 
 class WorkOrder(models.Model):
@@ -152,6 +184,7 @@ class WorkOrder(models.Model):
 
     # Renamed: duration → duration_minutes (explicit unit)
     duration_minutes = models.IntegerField(default=30, verbose_name='Duration (minutes)')
+    real_duration_minutes = models.IntegerField(default=0, verbose_name='Real Duration (minutes)')
 
     # Kept for backwards-compat with timer UI; kept alongside new timestamp fields
     elapsed_seconds = models.IntegerField(default=0)
@@ -173,4 +206,4 @@ class WorkOrder(models.Model):
         return self.duration_minutes
 
     def __str__(self):
-        return f"{self.operation} - MO-{self.manufacturing_order.id:03d} ({self.status})"
+        return f"{self.operation} - {self.manufacturing_order.ref} ({self.status})"

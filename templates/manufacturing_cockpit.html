@@ -5,164 +5,859 @@
 {% block heading %}Manufacturing Cockpit{% endblock %}
 
 {% block content %}
-<div class="manufacturing-workspace" style="display: grid; grid-template-columns: 1.2fr 1.8fr; gap: 24px; align-items: start;">
+<!-- Style Customizations -->
+<style>
+  .manufacturing-workspace {
+    display: grid;
+    grid-template-columns: 1.1fr 1.9fr;
+    gap: 24px;
+    align-items: start;
+  }
   
-  <!-- Left Panel: MO List -->
-  <div class="card-panel" style="margin-bottom: 0;">
-    <div class="panel-header">
-      <h3 class="panel-title">Manufacturing Queue</h3>
-      {% if permissions.can_edit_manufacturing and not permissions.is_read_only %}
-        <button class="btn btn-primary btn-sm" id="btn-open-create-mo-modal">+ Create MO</button>
-      {% endif %}
+  .card-panel {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+  }
+
+  .panel-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .badge-confirmed {
+    background-color: #dbeafe;
+    color: #1e40af;
+  }
+  .badge-progress {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+  .badge-received {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+  .badge-cancelled {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+
+  /* Workflow Steps chevron layout */
+  .workflow-steps-container {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .workflow-step {
+    flex: 1;
+    text-align: center;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    position: relative;
+    border-right: 1px solid var(--border-color);
+  }
+
+  .workflow-step:last-child {
+    border-right: none;
+  }
+
+  .workflow-step.active {
+    background-color: var(--accent-light);
+    color: var(--accent-hover);
+  }
+
+  .workflow-step.active-cancelled {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+
+  /* Form Elements */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: border-color var(--transition-fast);
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--accent-color);
+  }
+
+  .form-control:disabled, .form-control[readonly] {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+  }
+
+  /* Table styles */
+  .erp-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background-color: var(--bg-tertiary);
+  }
+
+  .action-buttons-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 2px 6px;
+    font-size: 14px;
+  }
+
+  .remove-btn:hover {
+    color: #b91c1c;
+  }
+
+  /* View Switcher */
+  .btn-view-switch {
+    background-color: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-view-switch:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+  .btn-view-switch.active {
+    background-color: var(--accent-hover) !important;
+    color: #ffffff !important;
+    border-color: var(--accent-hover) !important;
+  }
+
+  /* Kanban Board Styles */
+  .kanban-board-container {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .kanban-column {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 16px 12px;
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .kanban-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 8px;
+  }
+  .kanban-column-title {
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .kanban-card-count {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .kanban-cards-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-grow: 1;
+    min-height: 400px;
+  }
+  .kanban-card {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: 14px;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+  .kanban-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  .kanban-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .kanban-card-id {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+  .kanban-card-product {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+  }
+  .kanban-card-body {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .kanban-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: 8px;
+    margin-top: 8px;
+  }
+
+  /* List view list-row */
+  .list-row:hover {
+    background-color: var(--bg-secondary);
+  }
+</style>
+
+<!-- Top Controls Bar -->
+<div class="panel-header" style="background-color: var(--bg-primary); border-radius: var(--border-radius-lg); border:1px solid var(--border-color); padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 16px;">
+  <h3 class="panel-title" style="margin:0;">Manufacturing Order Desk</h3>
+  
+  <div style="display:flex; align-items:center; gap:16px; flex-wrap: wrap;">
+    <!-- Search Bar -->
+    <div style="position:relative; min-width: 250px;">
+      <input type="text" id="mo-search-input" class="form-control" placeholder="Search MOs (Ref, product, assignee)..." style="padding-left:32px; height: 38px; font-size:13px;">
+      <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size: 13px;">🔍</span>
     </div>
-    <div class="table-responsive">
-      <table class="erp-table">
-        <thead>
-          <tr>
-            <th>MO Ref</th>
-            <th>Product</th>
-            <th style="text-align:center;">Qty</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for mo in mfg_orders %}
-            <tr class="mo-row" data-id="{{ mo.id }}" 
-                style="cursor:pointer; {% if selected_mo and selected_mo.id == mo.id %}background-color: var(--bg-secondary);{% endif %}"
-                onclick="window.location.search = '?mo_id={{ mo.id }}'">
-              <td style="font-weight:700;">{{ mo.ref }}</td>
-              <td style="font-weight:600;">{{ mo.product.name }}</td>
-              <td style="text-align:center;">{{ mo.quantity }}</td>
-              <td>
-                <span class="badge badge-{% if mo.status == 'completed' %}received{% elif mo.status == 'confirmed' %}confirmed{% elif mo.status == 'in_progress' %}progress{% elif mo.status == 'quality_check' %}partial{% else %}draft{% endif %}">
-                  {{ mo.status|replace_underscore }}
-                </span>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="4" style="text-align:center; color:var(--text-muted);">No manufacturing orders.</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    
+    <!-- View Switcher -->
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button type="button" class="btn-view-switch" id="btn-view-list">
+        <span>☰</span> List View
+      </button>
+      <button type="button" class="btn-view-switch" id="btn-view-kanban">
+        <span>📋</span> Kanban Board
+      </button>
+      <button type="button" class="btn-view-switch" id="btn-view-cockpit">
+        <span>🛠</span> Cockpit Form
+      </button>
     </div>
-  </div>
-
-  <!-- Right Panel: MO Details / Cockpit -->
-  <div class="card-panel" id="mo-details-panel" style="margin-bottom: 0; min-height: 500px;">
-    {% if selected_mo %}
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:16px; margin-bottom:20px;">
-        <div>
-          <h3 class="panel-title" style="display:flex; align-items:center; gap:8px;">
-            <span>{{ selected_mo.ref }} Cockpit</span>
-            <span class="badge badge-{% if selected_mo.status == 'completed' %}received{% elif selected_mo.status == 'confirmed' %}confirmed{% elif selected_mo.status == 'in_progress' %}progress{% elif selected_mo.status == 'quality_check' %}partial{% else %}draft{% endif %}">
-              {{ selected_mo.status|replace_underscore }}
-            </span>
-          </h3>
-          <span style="font-size:12px; color:var(--text-muted);">Assigned to: <strong>{{ selected_mo.assignee }}</strong> | Created: {{ selected_mo.date|date:"Y-m-d H:i" }}</span>
-        </div>
-        
-        <div>
-          {% if selected_mo.status == 'draft' and permissions.can_edit_manufacturing and not permissions.is_read_only %}
-            <button class="btn btn-primary btn-sm" id="btn-cockpit-confirm-mo" data-id="{{ selected_mo.id }}">Confirm Production</button>
-            <button class="btn btn-secondary btn-sm" id="btn-cockpit-cancel-mo" data-id="{{ selected_mo.id }}" style="color:#ef4444; border-color:#ef4444; margin-left:8px;">Cancel MO</button>
-          {% endif %}
-
-          {% if selected_mo.status == 'quality_check' and permissions.can_edit_manufacturing and not permissions.is_read_only %}
-            <button class="btn btn-primary btn-sm" id="btn-cockpit-complete-mo" data-id="{{ selected_mo.id }}">Pass QC &amp; Finish MO</button>
-          {% endif %}
-
-          {% if selected_mo.status == 'confirmed' or selected_mo.status == 'in_progress' %}
-            {% if permissions.can_edit_manufacturing and not permissions.is_read_only %}
-              <button class="btn btn-danger btn-sm" id="btn-cockpit-force-finish-mo" data-id="{{ selected_mo.id }}" style="padding:4px 8px; font-size:11px;">Force Complete</button>
-              <button class="btn btn-secondary btn-sm" id="btn-cockpit-cancel-mo" data-id="{{ selected_mo.id }}" style="color:#ef4444; border-color:#ef4444; margin-left:8px; padding:4px 8px; font-size:11px;">Cancel MO</button>
-            {% endif %}
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Component Reservations -->
-      <div style="margin-bottom:24px;">
-        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px;">Components Reservation Logs</h4>
-        <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-md); overflow:hidden;">
-          <table class="erp-table" style="background-color: var(--bg-secondary);">
-            <thead>
-              <tr style="font-size:11px; text-transform:uppercase; background-color:var(--bg-tertiary);">
-                <th style="padding:8px 12px;">Component</th>
-                <th style="text-align:center; padding:8px 12px;">Unit/Unit</th>
-                <th style="text-align:center; padding:8px 12px;">Total Req</th>
-                <th style="text-align:center; padding:8px 12px;">Reserved</th>
-                <th style="text-align:center; padding:8px 12px;">On Hand</th>
-                <th style="padding:8px 12px;">Stock Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for comp in materials %}
-                <tr style="font-size:13px;">
-                  <td style="font-weight:600; padding:10px 12px;">{{ comp.name }}</td>
-                  <td style="text-align:center; padding:10px 12px;">{{ comp.unit_needed }} unit</td>
-                  <td style="text-align:center; font-weight:700; padding:10px 12px;">{{ comp.total_needed }}</td>
-                  <td style="text-align:center; padding:10px 12px; font-weight:600; color:{% if comp.shortage %}#d97706{% else %}var(--accent-hover){% endif %};">
-                    {{ comp.reserved }} / {{ comp.total_needed }}
-                  </td>
-                  <td style="text-align:center; padding:10px 12px; font-weight:700; color:{% if comp.on_hand < comp.total_needed %}#ef4444{% else %}var(--text-primary){% endif %};">
-                    {{ comp.on_hand }}
-                  </td>
-                  <td style="padding:10px 12px;">
-                    <span class="badge {% if comp.shortage %}badge-cancelled{% else %}badge-completed{% endif %}" style="padding: 2px 6px; font-size:10px;">
-                      {% if comp.shortage %}Shortage{% else %}Available{% endif %}
-                    </span>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Work Centers list -->
-      <div>
-        <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px;">Work Centers & Operational Tasks</h4>
-        <div class="wo-card-grid">
-          {% for wo in selected_mo.work_orders.all %}
-            <div class="wo-card {% if wo.status == 'completed' %}completed{% elif wo.status == 'active' %}active{% endif %}" data-wo-id="{{ wo.id }}">
-              <div class="wo-header">
-                <span class="badge" style="font-size:9px; font-weight:700; padding:2px 6px; background-color:rgba(0,0,0,0.05);">{{ wo.work_center }}</span>
-                <span class="badge badge-{% if wo.status == 'completed' %}received{% elif wo.status == 'active' %}progress{% else %}draft{% endif %}" style="font-size:9px;">
-                  {{ wo.status }}
-                </span>
-              </div>
-              <div class="wo-title" style="margin-top:4px;">{{ wo.name }}</div>
-              <div class="wo-timer" id="timer-{{ wo.id }}" data-seconds="{{ wo.elapsed_seconds }}" data-status="{{ wo.status }}">{{ wo.duration }}:00</div>
-              
-              <div style="margin-top:8px; display:flex; gap:6px;">
-                {% if permissions.can_edit_manufacturing and not permissions.is_read_only %}
-                  {% if wo.status == 'pending' %}
-                    <button class="btn btn-secondary btn-sm start-wo-btn" data-wo="{{ wo.id }}" style="width:100%; padding:4px 8px; font-size:11px;">Start</button>
-                  {% elif wo.status == 'active' %}
-                    <button class="btn btn-primary btn-sm complete-wo-btn" data-wo="{{ wo.id }}" style="width:100%; padding:4px 8px; font-size:11px;">Complete</button>
-                  {% endif %}
-                {% endif %}
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-        <div style="font-size:11px; color:var(--text-muted); text-align:center; margin-top:8px;">
-          <em>Operators must complete Assembly prior to commencing Paint and final Packing workflows.</em>
-        </div>
-      </div>
-    {% else %}
-      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--text-secondary); text-align:center; padding: 100px 20px;">
-        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="width:48px; height:48px; color:var(--text-muted); margin-bottom:12px;">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-        </svg>
-        <h3 style="font-weight:600; font-size:16px;">MO Detail Cockpit</h3>
-        <p style="font-size:13px; max-width:280px; margin-top:4px;">Select a manufacturing order from the queue to view operations, raw material reservations, and complete steps.</p>
-      </div>
+    
+    <button class="btn btn-secondary btn-sm" id="btn-mfg-logs" style="height: 38px;">Logs</button>
+    {% if permissions.can_edit_manufacturing and not permissions.is_read_only %}
+      <button class="btn btn-primary btn-sm" id="btn-open-create-mo-modal" style="height: 38px; display:flex; align-items:center; justify-content:center;">+ Create MO</button>
     {% endif %}
   </div>
+</div>
 
+<!-- ==============================================
+     1. LIST VIEW WORKSPACE
+     ============================================== -->
+<div class="list-view-container" id="mo-list-container" style="display:none; background-color: var(--bg-primary); border-radius: var(--border-radius-lg); border:1px solid var(--border-color); padding: 24px; box-shadow: var(--shadow-sm); margin-bottom: 24px;">
+  <div style="overflow-x: auto;">
+    <table class="table" style="width:100%; border-collapse:collapse; text-align:left;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border-color);">
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase;">Reference</th>
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase;">Date</th>
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase;">Finished Product</th>
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase;">Component Status</th>
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase; text-align:center;">Quantity</th>
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase;">Unit</th>
+          <th style="padding:12px 16px; font-weight:600; font-size:12px; color:var(--text-secondary); text-transform:uppercase;">Status</th>
+        </tr>
+      </thead>
+      <tbody id="mo-list-tbody">
+        {% for mo in mfg_orders %}
+          <tr class="list-row mo-item-clickable" data-id="{{ mo.id }}" data-ref="{{ mo.ref }}" data-product="{{ mo.product.name }}" data-assignee="{{ mo.assignee }}" data-status="{{ mo.status }}" style="border-bottom:1px solid var(--border-color); cursor:pointer; transition: background-color 0.2s;">
+            <td style="padding:16px; font-weight:700; color:var(--text-primary);">{{ mo.ref }}</td>
+            <td style="padding:16px; color:var(--text-secondary);">{{ mo.date|date:"Y-m-d H:i" }}</td>
+            <td style="padding:16px; font-weight:600; color:var(--text-primary);">{{ mo.product.name }}</td>
+            <td style="padding:16px;">
+              <span class="badge {% if mo.component_status == 'Not Available' %}badge-cancelled{% else %}badge-completed{% endif %}" style="padding: 2px 6px; font-size:11px;">
+                {{ mo.component_status }}
+              </span>
+            </td>
+            <td style="padding:16px; text-align:center; font-weight:700; color:var(--text-primary);">{{ mo.quantity|floatformat:0 }}</td>
+            <td style="padding:16px; color:var(--text-secondary);">{{ mo.product.uom }}</td>
+            <td style="padding:16px;">
+              <span class="badge badge-{% if mo.status == 'completed' %}received{% elif mo.status == 'confirmed' %}confirmed{% elif mo.status == 'in_progress' %}progress{% elif mo.status == 'quality_check' %}partial{% else %}draft{% endif %}">
+                {{ mo.status|replace_underscore }}
+              </span>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" style="text-align:center; color:var(--text-muted); padding:24px;">No manufacturing orders found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==============================================
+     2. KANBAN BOARD WORKSPACE
+     ============================================== -->
+<div class="list-view-container" id="mo-kanban-container" style="display:none; margin-bottom: 24px;">
+  <div class="kanban-board-container">
+    
+    <!-- Draft Column -->
+    <div class="kanban-column">
+      <div class="kanban-column-header">
+        <span class="kanban-column-title">
+          <span class="badge" style="background-color: var(--bg-tertiary); color: var(--text-secondary); font-size: 11px;">Draft</span>
+        </span>
+        <span class="kanban-card-count">{{ kanban_orders.draft.count }}</span>
+      </div>
+      <div class="kanban-cards-wrapper">
+        {% for mo in kanban_orders.draft %}
+          <div class="kanban-card mo-kanban-card mo-item-clickable" data-id="{{ mo.id }}" data-ref="{{ mo.ref }}" data-product="{{ mo.product.name }}" data-assignee="{{ mo.assignee }}" data-status="{{ mo.status }}">
+            <div class="kanban-card-header">
+              <span class="kanban-card-id">{{ mo.ref }}</span>
+              <span style="font-size:11px; color:var(--text-muted);">{{ mo.date|date:"N j" }}</span>
+            </div>
+            <div class="kanban-card-product">{{ mo.product.name }}</div>
+            <div class="kanban-card-body">
+              <span>Qty: <strong>{{ mo.quantity|floatformat:0 }} {{ mo.product.uom }}</strong></span>
+              <span>Assignee: <strong>{{ mo.assignee }}</strong></span>
+            </div>
+            <div class="kanban-card-footer">
+              <span class="badge {% if mo.component_status == 'Not Available' %}badge-cancelled{% else %}badge-completed{% endif %}" style="font-size:9px; padding:2px 6px;">
+                {{ mo.component_status }}
+              </span>
+              <span class="badge badge-draft" style="font-size:9px;">Draft</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Confirmed Column -->
+    <div class="kanban-column">
+      <div class="kanban-column-header">
+        <span class="kanban-column-title">
+          <span class="badge badge-confirmed" style="font-size: 11px;">Confirmed</span>
+        </span>
+        <span class="kanban-card-count">{{ kanban_orders.confirmed.count }}</span>
+      </div>
+      <div class="kanban-cards-wrapper">
+        {% for mo in kanban_orders.confirmed %}
+          <div class="kanban-card mo-kanban-card mo-item-clickable" data-id="{{ mo.id }}" data-ref="{{ mo.ref }}" data-product="{{ mo.product.name }}" data-assignee="{{ mo.assignee }}" data-status="{{ mo.status }}">
+            <div class="kanban-card-header">
+              <span class="kanban-card-id">{{ mo.ref }}</span>
+              <span style="font-size:11px; color:var(--text-muted);">{{ mo.date|date:"N j" }}</span>
+            </div>
+            <div class="kanban-card-product">{{ mo.product.name }}</div>
+            <div class="kanban-card-body">
+              <span>Qty: <strong>{{ mo.quantity|floatformat:0 }} {{ mo.product.uom }}</strong></span>
+              <span>Assignee: <strong>{{ mo.assignee }}</strong></span>
+            </div>
+            <div class="kanban-card-footer">
+              <span class="badge {% if mo.component_status == 'Not Available' %}badge-cancelled{% else %}badge-completed{% endif %}" style="font-size:9px; padding:2px 6px;">
+                {{ mo.component_status }}
+              </span>
+              <span class="badge badge-confirmed" style="font-size:9px;">Confirmed</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- In Progress Column -->
+    <div class="kanban-column">
+      <div class="kanban-column-header">
+        <span class="kanban-column-title">
+          <span class="badge badge-progress" style="font-size: 11px;">In Progress</span>
+        </span>
+        <span class="kanban-card-count">{{ kanban_orders.in_progress.count }}</span>
+      </div>
+      <div class="kanban-cards-wrapper">
+        {% for mo in kanban_orders.in_progress %}
+          <div class="kanban-card mo-kanban-card mo-item-clickable" data-id="{{ mo.id }}" data-ref="{{ mo.ref }}" data-product="{{ mo.product.name }}" data-assignee="{{ mo.assignee }}" data-status="{{ mo.status }}">
+            <div class="kanban-card-header">
+              <span class="kanban-card-id">{{ mo.ref }}</span>
+              <span style="font-size:11px; color:var(--text-muted);">{{ mo.date|date:"N j" }}</span>
+            </div>
+            <div class="kanban-card-product">{{ mo.product.name }}</div>
+            <div class="kanban-card-body">
+              <span>Qty: <strong>{{ mo.quantity|floatformat:0 }} {{ mo.product.uom }}</strong></span>
+              <span>Assignee: <strong>{{ mo.assignee }}</strong></span>
+            </div>
+            <div class="kanban-card-footer">
+              <span class="badge {% if mo.component_status == 'Not Available' %}badge-cancelled{% else %}badge-completed{% endif %}" style="font-size:9px; padding:2px 6px;">
+                {{ mo.component_status }}
+              </span>
+              <span class="badge badge-{% if mo.status == 'quality_check' %}partial{% else %}progress{% endif %}" style="font-size:9px;">
+                {{ mo.status|replace_underscore }}
+              </span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Completed Column -->
+    <div class="kanban-column">
+      <div class="kanban-column-header">
+        <span class="kanban-column-title">
+          <span class="badge badge-completed" style="font-size: 11px;">Completed</span>
+        </span>
+        <span class="kanban-card-count">{{ kanban_orders.completed.count }}</span>
+      </div>
+      <div class="kanban-cards-wrapper">
+        {% for mo in kanban_orders.completed %}
+          <div class="kanban-card mo-kanban-card mo-item-clickable" data-id="{{ mo.id }}" data-ref="{{ mo.ref }}" data-product="{{ mo.product.name }}" data-assignee="{{ mo.assignee }}" data-status="{{ mo.status }}">
+            <div class="kanban-card-header">
+              <span class="kanban-card-id">{{ mo.ref }}</span>
+              <span style="font-size:11px; color:var(--text-muted);">{{ mo.date|date:"N j" }}</span>
+            </div>
+            <div class="kanban-card-product">{{ mo.product.name }}</div>
+            <div class="kanban-card-body">
+              <span>Qty: <strong>{{ mo.quantity|floatformat:0 }} {{ mo.product.uom }}</strong></span>
+              <span>Assignee: <strong>{{ mo.assignee }}</strong></span>
+            </div>
+            <div class="kanban-card-footer">
+              <span class="badge {% if mo.component_status == 'Not Available' %}badge-cancelled{% else %}badge-completed{% endif %}" style="font-size:9px; padding:2px 6px;">
+                {{ mo.component_status }}
+              </span>
+              <span class="badge badge-received" style="font-size:9px;">Completed</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Cancelled Column -->
+    <div class="kanban-column">
+      <div class="kanban-column-header">
+        <span class="kanban-column-title">
+          <span class="badge badge-cancelled" style="font-size: 11px;">Cancelled</span>
+        </span>
+        <span class="kanban-card-count">{{ kanban_orders.cancelled.count }}</span>
+      </div>
+      <div class="kanban-cards-wrapper">
+        {% for mo in kanban_orders.cancelled %}
+          <div class="kanban-card mo-kanban-card mo-item-clickable" data-id="{{ mo.id }}" data-ref="{{ mo.ref }}" data-product="{{ mo.product.name }}" data-assignee="{{ mo.assignee }}" data-status="{{ mo.status }}">
+            <div class="kanban-card-header">
+              <span class="kanban-card-id">{{ mo.ref }}</span>
+              <span style="font-size:11px; color:var(--text-muted);">{{ mo.date|date:"N j" }}</span>
+            </div>
+            <div class="kanban-card-product">{{ mo.product.name }}</div>
+            <div class="kanban-card-body">
+              <span>Qty: <strong>{{ mo.quantity|floatformat:0 }} {{ mo.product.uom }}</strong></span>
+              <span>Assignee: <strong>{{ mo.assignee }}</strong></span>
+            </div>
+            <div class="kanban-card-footer">
+              <span class="badge {% if mo.component_status == 'Not Available' %}badge-cancelled{% else %}badge-completed{% endif %}" style="font-size:9px; padding:2px 6px;">
+                {{ mo.component_status }}
+              </span>
+              <span class="badge badge-cancelled" style="font-size:9px;">Cancelled</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==============================================
+     3. COCKPIT VIEW WORKSPACE
+     ============================================== -->
+<div class="list-view-container" id="mo-cockpit-container">
+  <div class="manufacturing-workspace">
+    
+    <!-- Left Panel: MO List -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Manufacturing Queue</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="erp-table">
+          <thead>
+            <tr>
+              <th>MO Ref</th>
+              <th>Product</th>
+              <th style="text-align:center;">Qty</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for mo in mfg_orders %}
+              <tr class="mo-row" data-id="{{ mo.id }}" 
+                  style="cursor:pointer; {% if selected_mo and selected_mo.id == mo.id %}background-color: var(--bg-secondary);{% endif %}"
+                  onclick="window.location.search = '?mo_id={{ mo.id }}'">
+                <td style="font-weight:700;">{{ mo.ref }}</td>
+                <td style="font-weight:600;">{{ mo.product.name }}</td>
+                <td style="text-align:center;">{{ mo.quantity|floatformat:0 }}</td>
+                <td>
+                  <span class="badge badge-{% if mo.status == 'completed' %}received{% elif mo.status == 'confirmed' %}confirmed{% elif mo.status == 'in_progress' %}progress{% elif mo.status == 'quality_check' %}partial{% else %}draft{% endif %}">
+                    {{ mo.status|replace_underscore }}
+                  </span>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" style="text-align:center; color:var(--text-muted); padding: 20px;">No manufacturing orders.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right Panel: MO Details / Cockpit Form -->
+    <div class="card-panel" id="mo-details-panel" style="min-height: 550px;">
+      {% if selected_mo %}
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:16px; margin-bottom:20px;">
+          <div>
+            <h3 class="panel-title" style="display:flex; align-items:center; gap:8px;">
+              <span>{{ selected_mo.ref }} Cockpit</span>
+              <button class="btn btn-secondary btn-sm" onclick="window.location.href = '/manufacturing/'" style="padding: 2px 8px; font-size:11px; margin-left: 8px;">Back to Queue</button>
+            </h3>
+            <span style="font-size:12px; color:var(--text-muted);">Created: {{ selected_mo.date|date:"Y-m-d H:i" }}</span>
+          </div>
+          
+          <div class="action-buttons-bar">
+            {% if permissions.can_edit_manufacturing and not permissions.is_read_only %}
+              <!-- Stage buttons -->
+              {% if selected_mo.status == 'draft' %}
+                <button class="btn btn-primary btn-sm" id="btn-cockpit-confirm-mo" data-id="{{ selected_mo.id }}">Confirm</button>
+                <button class="btn btn-secondary btn-sm" id="btn-cockpit-cancel-mo" data-id="{{ selected_mo.id }}" style="color:#ef4444; border-color:#ef4444;">Cancel MO</button>
+                <button class="btn btn-primary btn-sm" id="btn-cockpit-save-mo" data-id="{{ selected_mo.id }}" style="background-color: var(--accent-hover);">Save Changes</button>
+              {% elif selected_mo.status == 'confirmed' %}
+                <button class="btn btn-primary btn-sm" id="btn-cockpit-start-mo" data-id="{{ selected_mo.id }}">Start</button>
+                <button class="btn btn-primary btn-sm" id="btn-cockpit-complete-mo" data-id="{{ selected_mo.id }}">Produce</button>
+                <button class="btn btn-secondary btn-sm" id="btn-cockpit-cancel-mo" data-id="{{ selected_mo.id }}" style="color:#ef4444; border-color:#ef4444;">Cancel MO</button>
+                <button class="btn btn-primary btn-sm" id="btn-cockpit-save-mo" data-id="{{ selected_mo.id }}" style="background-color: var(--accent-hover);">Save Changes</button>
+              {% elif selected_mo.status == 'in_progress' %}
+                <button class="btn btn-primary btn-sm" id="btn-cockpit-complete-mo" data-id="{{ selected_mo.id }}">Produce</button>
+                <button class="btn btn-secondary btn-sm" id="btn-cockpit-cancel-mo" data-id="{{ selected_mo.id }}" style="color:#ef4444; border-color:#ef4444;">Cancel MO</button>
+                <button class="btn btn-primary btn-sm" id="btn-cockpit-save-mo" data-id="{{ selected_mo.id }}" style="background-color: var(--accent-hover);">Save Changes</button>
+              {% elif selected_mo.status == 'quality_check' %}
+                <button class="btn btn-primary btn-sm" id="btn-cockpit-complete-mo" data-id="{{ selected_mo.id }}">Pass QC &amp; Complete</button>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Stage Flow Progression -->
+        <div class="workflow-steps-container">
+          <div class="workflow-step {% if selected_mo.status == 'draft' %}active{% endif %}">Draft</div>
+          <div class="workflow-step {% if selected_mo.status == 'confirmed' %}active{% endif %}">Confirmed</div>
+          <div class="workflow-step {% if selected_mo.status == 'in_progress' %}active{% endif %}">In Progress</div>
+          {% if selected_mo.status == 'quality_check' %}
+            <div class="workflow-step active" style="background-color:#fef3c7; color:#92400e;">Quality Check</div>
+          {% endif %}
+          <div class="workflow-step {% if selected_mo.status == 'completed' %}active{% endif %}">Completed</div>
+          {% if selected_mo.status == 'cancelled' %}
+            <div class="workflow-step active-cancelled">Cancelled</div>
+          {% endif %}
+        </div>
+
+        <!-- Detailed Fields Form -->
+        <form id="mo-detail-form" data-id="{{ selected_mo.id }}">
+          <div class="form-grid">
+            
+            <div class="form-group">
+              <label for="detail-mo-id">MO ID</label>
+              <input type="text" id="detail-mo-id" class="form-control" value="{{ selected_mo.ref }}" readonly>
+            </div>
+
+            <div class="form-group">
+              <label for="detail-mo-product">Finished Product *</label>
+              {% if selected_mo.status == 'draft' %}
+                <select id="detail-mo-product" class="form-control" required>
+                  {% for p in products %}
+                    <option value="{{ p.id }}" data-bom-id="{% if p.bom %}{{ p.bom.id }}{% else %}none{% endif %}" {% if selected_mo.product.id == p.id %}selected{% endif %}>
+                      {{ p.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              {% else %}
+                <input type="text" class="form-control" value="{{ selected_mo.product.name }}" readonly>
+                <input type="hidden" id="detail-mo-product" value="{{ selected_mo.product.id }}">
+              {% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="detail-mo-qty">Quantity *</label>
+              <input type="number" id="detail-mo-qty" class="form-control" min="1" value="{{ selected_mo.quantity|floatformat:0 }}"
+                     {% if selected_mo.status != 'draft' %}readonly{% endif %} required>
+            </div>
+
+            <div class="form-group">
+              <label for="detail-mo-bom">Bill of Material</label>
+              {% if selected_mo.status == 'draft' %}
+                <select id="detail-mo-bom" class="form-control">
+                  <option value="none">No Bill of Material (Manual Components)</option>
+                  {% for b in boms %}
+                    <option value="{{ b.id }}" data-product-id="{{ b.product.id }}" {% if selected_mo.bom.id == b.id %}selected{% endif %}>
+                      {{ b.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              {% else %}
+                <input type="text" class="form-control" value="{% if selected_mo.bom %}{{ selected_mo.bom.name }}{% else %}No Bill of Material (Manual Components){% endif %}" readonly>
+                <input type="hidden" id="detail-mo-bom" value="{% if selected_mo.bom %}{{ selected_mo.bom.id }}{% else %}none{% endif %}">
+              {% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="detail-mo-date">Schedule Date *</label>
+              <input type="date" id="detail-mo-date" class="form-control" value="{{ selected_mo.planned_date|date:'Y-m-d' }}"
+                     {% if selected_mo.status == 'completed' or selected_mo.status == 'cancelled' %}readonly{% endif %} required>
+            </div>
+
+            <div class="form-group">
+              <label for="detail-mo-assignee">Assignee *</label>
+              {% if selected_mo.status == 'completed' or selected_mo.status == 'cancelled' %}
+                <input type="text" class="form-control" value="{{ selected_mo.assignee }}" readonly>
+              {% else %}
+                <select id="detail-mo-assignee" class="form-control" required>
+                  <option value="Shop Floor Operator" {% if selected_mo.assignee == 'Shop Floor Operator' %}selected{% endif %}>Shop Floor Operator</option>
+                  <option value="Admin User" {% if selected_mo.assignee == 'Admin User' %}selected{% endif %}>Admin User</option>
+                  <option value="Sales Representative" {% if selected_mo.assignee == 'Sales Representative' %}selected{% endif %}>Sales Representative</option>
+                  <option value="Procurement Manager" {% if selected_mo.assignee == 'Procurement Manager' %}selected{% endif %}>Procurement Manager</option>
+                  <option value="Stockroom Controller" {% if selected_mo.assignee == 'Stockroom Controller' %}selected{% endif %}>Stockroom Controller</option>
+                  <option value="Shiv (CEO)" {% if selected_mo.assignee == 'Shiv (CEO)' %}selected{% endif %}>Shiv (CEO)</option>
+                </select>
+              {% endif %}
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+              <label for="detail-mo-notes">Notes</label>
+              <textarea id="detail-mo-notes" class="form-control" rows="2" {% if selected_mo.status == 'completed' or selected_mo.status == 'cancelled' %}readonly{% endif %}>{{ selected_mo.notes }}</textarea>
+            </div>
+          </div>
+        </form>
+
+        <!-- Components Table -->
+        <div style="margin-bottom:24px;">
+          <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>Components Requirements &amp; Consumption</span>
+            {% if selected_mo.status == 'draft' %}
+              <span style="font-size:11px; text-transform:none; font-weight:normal; color:var(--text-muted);">Add components manually if needed</span>
+            {% endif %}
+          </h4>
+          <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-md); overflow:hidden;">
+            <table class="erp-table" style="background-color: var(--bg-secondary);" id="components-table">
+              <thead>
+                <tr style="font-size:11px; text-transform:uppercase; background-color:var(--bg-tertiary);">
+                  <th style="padding:8px 12px;">Component</th>
+                  <th style="text-align:center; padding:8px 12px;">To Consume</th>
+                  <th style="text-align:center; padding:8px 12px;">Consumed</th>
+                  <th style="padding:8px 12px;">Availability</th>
+                  {% if selected_mo.status == 'draft' %}
+                    <th style="text-align:center; padding:8px 12px; width:60px;">Action</th>
+                  {% endif %}
+                </tr>
+              </thead>
+              <tbody id="components-tbody">
+                {% for comp in materials %}
+                  <tr style="font-size:13px;" class="component-row" data-id="{{ comp.id }}" data-product-id="{{ comp.prod_id }}" data-unit-needed="{{ comp.unit_needed }}">
+                    <td style="font-weight:600; padding:10px 12px;" class="comp-name">{{ comp.name }}</td>
+                    <td style="text-align:center; font-weight:700; padding:10px 12px;" class="comp-to-consume">{{ comp.total_needed }}</td>
+                    <td style="text-align:center; padding:10px 12px;">
+                      {% if selected_mo.status == 'confirmed' or selected_mo.status == 'in_progress' %}
+                        <input type="number" class="form-control comp-consumed-input" style="max-width:80px; text-align:center; margin:0 auto; padding: 4px;" 
+                               value="{{ comp.consumed }}" min="0" step="1">
+                      {% else %}
+                        <span class="comp-consumed-text">{{ comp.consumed }}</span>
+                      {% endif %}
+                    </td>
+                    <td style="padding:10px 12px;">
+                      <span class="badge {% if comp.shortage %}badge-cancelled{% else %}badge-completed{% endif %}" style="padding: 2px 6px; font-size:10px;">
+                        {% if comp.shortage %}Not Available{% else %}Available{% endif %}
+                      </span>
+                    </td>
+                    {% if selected_mo.status == 'draft' %}
+                      <td style="text-align:center; padding:10px 12px;">
+                        <button type="button" class="remove-btn remove-component-btn">✕</button>
+                      </td>
+                    {% endif %}
+                  </tr>
+                {% empty %}
+                  <tr class="empty-components-row">
+                    <td colspan="{% if selected_mo.status == 'draft' %}5{% else %}4{% endif %}" style="text-align:center; color:var(--text-muted); padding: 15px;">No components required.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          {% if selected_mo.status == 'draft' %}
+            <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+              <select id="add-component-select" class="form-control" style="max-width: 250px;">
+                <option value="" disabled selected>Select component to add...</option>
+                {% for p in products %}
+                  {% if p.category == 'Components' %}
+                    <option value="{{ p.id }}">{{ p.name }} ({{ p.sku }})</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+              <input type="number" id="add-component-qty" class="form-control" placeholder="Qty" style="max-width: 100px;" min="1" value="1">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-add-component-line">+ Add Component Line</button>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Work Orders Table -->
+        <div style="margin-bottom:24px;">
+          <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>Work Orders &amp; Operations</span>
+          </h4>
+          <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-md); overflow:hidden;">
+            <table class="erp-table" style="background-color: var(--bg-secondary);" id="operations-table">
+              <thead>
+                <tr style="font-size:11px; text-transform:uppercase; background-color:var(--bg-tertiary);">
+                  <th style="padding:8px 12px;">Operation</th>
+                  <th style="padding:8px 12px;">Work Center</th>
+                  <th style="text-align:center; padding:8px 12px;">Expected Duration (mins)</th>
+                  {% if selected_mo.status != 'draft' %}
+                    <th style="text-align:center; padding:8px 12px;">Real Duration (mins)</th>
+                    <th style="padding:8px 12px;">Timer / Status</th>
+                  {% endif %}
+                  {% if selected_mo.status == 'draft' %}
+                    <th style="text-align:center; padding:8px 12px; width:60px;">Action</th>
+                  {% endif %}
+                </tr>
+              </thead>
+              <tbody id="operations-tbody">
+                {% for wo in selected_mo.work_orders.all %}
+                  <tr style="font-size:13px;" class="operation-row" data-id="{{ wo.id }}" data-duration-per-unit="{% if selected_mo.quantity %}{{ wo.duration_minutes|divide:selected_mo.quantity }}{% else %}{{ wo.duration_minutes }}{% endif %}">
+                    <td style="font-weight:600; padding:10px 12px;" class="op-name">{{ wo.operation }}</td>
+                    <td style="padding:10px 12px;" class="op-workcenter">{{ wo.work_center }}</td>
+                    <td style="text-align:center; font-weight:700; padding:10px 12px;" class="op-duration">{{ wo.duration_minutes }}</td>
+                    {% if selected_mo.status != 'draft' %}
+                      <td style="text-align:center; padding:10px 12px;">
+                        {% if selected_mo.status == 'confirmed' or selected_mo.status == 'in_progress' %}
+                          <input type="number" class="form-control op-real-duration-input" style="max-width:80px; text-align:center; margin:0 auto; padding: 4px;" 
+                                 value="{{ wo.real_duration_minutes }}" min="0" step="1">
+                        {% else %}
+                          <span class="op-real-duration-text">{{ wo.real_duration_minutes }}</span>
+                        {% endif %}
+                      </td>
+                      <td style="padding:10px 12px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                          <span class="badge badge-{% if wo.status == 'completed' %}received{% elif wo.status == 'active' %}progress{% else %}draft{% endif %}" style="font-size:10px;">
+                            {{ wo.status }}
+                          </span>
+                          <span class="wo-timer" id="timer-{{ wo.id }}" data-seconds="{{ wo.elapsed_seconds }}" data-status="{{ wo.status }}" style="font-weight:bold; font-size:11px;">
+                            {{ wo.duration_minutes }}:00
+                          </span>
+                          {% if selected_mo.status == 'confirmed' or selected_mo.status == 'in_progress' %}
+                            {% if wo.status == 'pending' %}
+                              <button type="button" class="btn btn-secondary btn-sm start-wo-btn" data-wo="{{ wo.id }}" style="padding: 2px 6px; font-size:10px;">Start</button>
+                            {% elif wo.status == 'active' %}
+                              <button type="button" class="btn btn-primary btn-sm complete-wo-btn" data-wo="{{ wo.id }}" style="padding: 2px 6px; font-size:10px;">Complete</button>
+                            {% endif %}
+                          {% endif %}
+                        </div>
+                      </td>
+                    {% endif %}
+                    {% if selected_mo.status == 'draft' %}
+                      <td style="text-align:center; padding:10px 12px;">
+                        <button type="button" class="remove-btn remove-operation-btn">✕</button>
+                      </td>
+                    {% endif %}
+                  </tr>
+                {% empty %}
+                  <tr class="empty-operations-row">
+                    <td colspan="{% if selected_mo.status == 'draft' %}4{% else %}5{% endif %}" style="text-align:center; color:var(--text-muted); padding: 15px;">No operations specified.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          {% if selected_mo.status == 'draft' %}
+            <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+              <input type="text" id="add-operation-name" class="form-control" placeholder="Operation name..." style="max-width: 200px;">
+              <input type="text" id="add-operation-workcenter" class="form-control" placeholder="Work center..." style="max-width: 150px;">
+              <input type="number" id="add-operation-duration" class="form-control" placeholder="Duration (mins)" style="max-width: 120px;" min="1" value="30">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-add-operation-line">+ Add Operation</button>
+            </div>
+          {% endif %}
+        </div>
+
+      {% else %}
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--text-secondary); text-align:center; padding: 100px 20px;">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="width:48px; height:48px; color:var(--text-muted); margin-bottom:12px;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+          </svg>
+          <h3 style="font-weight:600; font-size:16px;">MO Detail Cockpit</h3>
+          <p style="font-size:13px; max-width:280px; margin-top:4px;">Select a manufacturing order from the queue to view operations, raw material reservations, and complete steps.</p>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
 </div>
 
 <!-- MO Creation Modal -->
@@ -173,27 +868,52 @@
       <button class="modal-close" id="close-mo-modal">✕</button>
     </div>
     <form id="mo-create-form">
-      <div class="modal-body">
-        <div class="form-group" style="margin-bottom:16px;">
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="form-group">
+          <label for="mo-id">MO ID (Auto-Generated)</label>
+          <input type="text" id="mo-id" class="form-control" value="{{ next_mo_ref }}" readonly style="background-color: var(--bg-tertiary); font-weight: bold;">
+        </div>
+
+        <div class="form-group">
           <label for="mo-product">Finished Product Link *</label>
           <select id="mo-product" class="form-control" required>
-            <option value="" disabled selected>Select recipe-linked product...</option>
-            {% for p in products_with_boms %}
-              <option value="{{ p.id }}">
-                {{ p.name }} (Recipe: {{ p.bom.name }})
-              </option>
+            <option value="" disabled selected>Select Finished Product...</option>
+            {% for p in products %}
+              <option value="{{ p.id }}">{{ p.name }} ({{ p.sku }})</option>
             {% endfor %}
           </select>
         </div>
 
-        <div class="form-grid">
+        <div class="form-group">
+          <label for="mo-qty">Production Quantity *</label>
+          <input type="number" id="mo-qty" class="form-control" min="1" value="5" required>
+        </div>
+
+        <div class="form-group">
+          <label for="mo-bom">Bill of Material</label>
+          <select id="mo-bom" class="form-control">
+            <option value="none">No Bill of Material (Manual Components)</option>
+            {% for b in boms %}
+              <option value="{{ b.id }}" data-product-id="{{ b.product.id }}">{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-grid" style="margin-bottom:0;">
           <div class="form-group">
-            <label for="mo-qty">Production Quantity *</label>
-            <input type="number" id="mo-qty" class="form-control" min="1" value="5" required>
+            <label for="mo-date">Schedule Date *</label>
+            <input type="date" id="mo-date" class="form-control" required>
           </div>
           <div class="form-group">
-            <label for="mo-assignee">Assign Floor Operator</label>
-            <input type="text" id="mo-assignee" class="form-control" placeholder="Operator name..." value="John Operative">
+            <label for="mo-assignee">Assign Floor Operator *</label>
+            <select id="mo-assignee" class="form-control" required>
+              <option value="Shop Floor Operator" selected>Shop Floor Operator</option>
+              <option value="Admin User">Admin User</option>
+              <option value="Sales Representative">Sales Representative</option>
+              <option value="Procurement Manager">Procurement Manager</option>
+              <option value="Stockroom Controller">Stockroom Controller</option>
+              <option value="Shiv (CEO)">Shiv (CEO)</option>
+            </select>
           </div>
         </div>
       </div>
@@ -205,9 +925,52 @@
   </div>
 </div>
 
+<!-- Products and BOMs static databases for dynamic client-side filtering -->
+<script id="products-data" type="application/json">
+  {
+    {% for p in products %}
+      "{{ p.id }}": {
+        "name": "{{ p.name|escapejs }}",
+        "sku": "{{ p.sku|escapejs }}",
+        "free_to_use": {{ p.free_to_use }}
+      }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  }
+</script>
+
+<script id="boms-data" type="application/json">
+  {
+    {% for b in boms %}
+      "{{ b.id }}": {
+        "name": "{{ b.name|escapejs }}",
+        "components": [
+          {% for c in b.components.all %}
+            {
+              "productId": {{ c.product.id }},
+              "name": "{{ c.product.name|escapejs }}",
+              "sku": "{{ c.product.sku|escapejs }}",
+              "quantity": {{ c.quantity }}
+            }{% if not forloop.last %},{% endif %}
+          {% endfor %}
+        ],
+        "operations": [
+          {% for o in b.operations.all %}
+            {
+              "name": "{{ o.operation_name|escapejs }}",
+              "workCenter": "{{ o.work_center|escapejs }}",
+              "duration": {{ o.duration_minutes }}
+            }{% if not forloop.last %},{% endif %}
+          {% endfor %}
+        ]
+      }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  }
+</script>
+
 <script>
   // Timer Registry to handle live tick updates
   const activeTimers = {};
+  const productsData = JSON.parse(document.getElementById("products-data").textContent);
 
   function formatTimerValue(seconds) {
     const m = String(Math.floor(seconds / 60)).padStart(2, '0');
@@ -215,7 +978,415 @@
     return `${m}:${s}`;
   }
 
+  // Checkbox functions for list view
+
+
   document.addEventListener("DOMContentLoaded", () => {
+    // ----------------------------------------------------
+    // View Switcher logic (List / Kanban / Cockpit Form)
+    // ----------------------------------------------------
+    const btnList = document.getElementById("btn-view-list");
+    const btnKanban = document.getElementById("btn-view-kanban");
+    const btnCockpit = document.getElementById("btn-view-cockpit");
+
+    const listContainer = document.getElementById("mo-list-container");
+    const kanbanContainer = document.getElementById("mo-kanban-container");
+    const cockpitContainer = document.getElementById("mo-cockpit-container");
+
+    function switchView(mode) {
+      // Deactivate all buttons
+      btnList.classList.remove("active");
+      btnKanban.classList.remove("active");
+      btnCockpit.classList.remove("active");
+
+      // Hide all containers
+      listContainer.style.display = "none";
+      kanbanContainer.style.display = "none";
+      cockpitContainer.style.display = "none";
+
+      if (mode === "list") {
+        btnList.classList.add("active");
+        listContainer.style.display = "block";
+      } else if (mode === "kanban") {
+        btnKanban.classList.add("active");
+        kanbanContainer.style.display = "block";
+      } else {
+        btnCockpit.classList.add("active");
+        cockpitContainer.style.display = "block";
+      }
+      localStorage.setItem("mfg_view_mode", mode);
+    }
+
+    // Bind clicks to view switcher buttons
+    btnList.addEventListener("click", () => switchView("list"));
+    btnKanban.addEventListener("click", () => switchView("kanban"));
+    btnCockpit.addEventListener("click", () => switchView("cockpit"));
+
+    // Set initial view state
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasMoId = urlParams.has("mo_id");
+    const savedMode = localStorage.getItem("mfg_view_mode") || "cockpit";
+
+    if (hasMoId) {
+      // If we have mo_id parameter, force Cockpit view
+      switchView("cockpit");
+    } else {
+      switchView(savedMode);
+    }
+
+    // Click on List row or Kanban card opens that MO in Cockpit View
+    document.querySelectorAll(".mo-item-clickable").forEach(item => {
+      item.addEventListener("click", (e) => {
+        // Prevent trigger if clicking on checkbox td in list view
+        if (e.target.closest("input[type='checkbox']")) return;
+        
+        const id = item.dataset.id;
+        window.location.search = `?mo_id=${id}`;
+      });
+    });
+
+    // ----------------------------------------------------
+    // Search Filter logic
+    // ----------------------------------------------------
+    const searchInput = document.getElementById("mo-search-input");
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        const query = searchInput.value.toLowerCase().trim();
+        
+        // Filter List rows
+        document.querySelectorAll("#mo-list-tbody .list-row").forEach(row => {
+          const ref = row.dataset.ref.toLowerCase();
+          const product = row.dataset.product.toLowerCase();
+          const assignee = row.dataset.assignee.toLowerCase();
+          const status = row.dataset.status.toLowerCase();
+          if (ref.includes(query) || product.includes(query) || assignee.includes(query) || status.includes(query)) {
+            row.style.display = "";
+          } else {
+            row.style.display = "none";
+          }
+        });
+        
+        // Filter Kanban cards
+        document.querySelectorAll(".mo-kanban-card").forEach(card => {
+          const ref = card.dataset.ref.toLowerCase();
+          const product = card.dataset.product.toLowerCase();
+          const assignee = card.dataset.assignee.toLowerCase();
+          const status = card.dataset.status.toLowerCase();
+          if (ref.includes(query) || product.includes(query) || assignee.includes(query) || status.includes(query)) {
+            card.style.display = "";
+          } else {
+            card.style.display = "none";
+          }
+        });
+      });
+    }
+
+    // Set default schedule date to today in MO Creation modal
+    const creationDateInput = document.getElementById("mo-date");
+    if (creationDateInput) {
+      creationDateInput.value = new Date().toISOString().split('T')[0];
+    }
+
+    // Dynamic BoM filtering for MO Creation modal
+    const createProductSelect = document.getElementById("mo-product");
+    const createBomSelect = document.getElementById("mo-bom");
+    if (createProductSelect && createBomSelect) {
+      createProductSelect.addEventListener("change", () => {
+        const selectedProductId = createProductSelect.value;
+        let matchingBomId = 'none';
+
+        Array.from(createBomSelect.options).forEach(opt => {
+          if (opt.value === 'none') {
+            opt.style.display = 'block';
+          } else {
+            const optProdId = opt.dataset.productId;
+            if (optProdId == selectedProductId) {
+              opt.style.display = 'block';
+              matchingBomId = opt.value;
+            } else {
+              opt.style.display = 'none';
+            }
+          }
+        });
+        createBomSelect.value = matchingBomId;
+      });
+    }
+
+    // Dynamic BoM filtering for Cockpit details panel (if in Draft)
+    const detailProductSelect = document.getElementById("detail-mo-product");
+    const detailBomSelect = document.getElementById("detail-mo-bom");
+    if (detailProductSelect && detailBomSelect) {
+      detailProductSelect.addEventListener("change", () => {
+        const selectedProductId = detailProductSelect.value;
+        let matchingBomId = 'none';
+
+        Array.from(detailBomSelect.options).forEach(opt => {
+          if (opt.value === 'none') {
+            opt.style.display = 'block';
+          } else {
+            const optProdId = opt.dataset.productId;
+            if (optProdId == selectedProductId) {
+              opt.style.display = 'block';
+              matchingBomId = opt.value;
+            } else {
+              opt.style.display = 'none';
+            }
+          }
+        });
+        detailBomSelect.value = matchingBomId;
+        detailBomSelect.dispatchEvent(new Event('change'));
+      });
+    }
+
+    // Update Components and Operations when BoM is changed in Draft Cockpit
+    if (detailBomSelect) {
+      detailBomSelect.addEventListener("change", () => {
+        const bomId = detailBomSelect.value;
+        const bomsData = JSON.parse(document.getElementById("boms-data").textContent);
+        const qty = parseFloat(document.getElementById("detail-mo-qty").value) || 1;
+
+        const compTbody = document.getElementById("components-tbody");
+        const opTbody = document.getElementById("operations-tbody");
+
+        // Clear existing rows
+        compTbody.innerHTML = '';
+        opTbody.innerHTML = '';
+
+        if (bomId && bomId !== 'none' && bomsData[bomId]) {
+          const bom = bomsData[bomId];
+
+          // Populate components
+          bom.components.forEach(comp => {
+            const totalNeeded = (comp.quantity * qty).toFixed(2);
+            const prodData = productsData[comp.productId];
+            const freeStock = prodData ? prodData.free_to_use : 0;
+            const statusClass = freeStock >= comp.quantity * qty ? 'badge-completed' : 'badge-cancelled';
+            const statusText = freeStock >= comp.quantity * qty ? 'Available' : 'Not Available';
+
+            const tr = document.createElement('tr');
+            tr.className = 'component-row';
+            tr.style.fontSize = '13px';
+            tr.dataset.productId = comp.productId;
+            tr.dataset.unitNeeded = comp.quantity;
+            tr.innerHTML = `
+              <td style="font-weight:600; padding:10px 12px;" class="comp-name">${comp.name}</td>
+              <td style="text-align:center; font-weight:700; padding:10px 12px;" class="comp-to-consume">${totalNeeded}</td>
+              <td style="text-align:center; padding:10px 12px;">
+                <span class="comp-consumed-text">0</span>
+              </td>
+              <td style="padding:10px 12px;">
+                <span class="badge ${statusClass}" style="padding: 2px 6px; font-size:10px;">${statusText}</span>
+              </td>
+              <td style="text-align:center; padding:10px 12px;">
+                <button type="button" class="remove-btn remove-component-btn">✕</button>
+              </td>
+            `;
+            compTbody.appendChild(tr);
+
+            // Bind remove button
+            tr.querySelector(".remove-component-btn").addEventListener("click", () => tr.remove());
+          });
+
+          // Populate operations
+          bom.operations.forEach(op => {
+            const scaledDur = Math.ceil(op.duration * qty);
+            const tr = document.createElement('tr');
+            tr.className = 'operation-row';
+            tr.style.fontSize = '13px';
+            tr.dataset.durationPerUnit = op.duration;
+            tr.innerHTML = `
+              <td style="font-weight:600; padding:10px 12px;" class="op-name">${op.name}</td>
+              <td style="padding:10px 12px;" class="op-workcenter">${op.workCenter}</td>
+              <td style="text-align:center; font-weight:700; padding:10px 12px;" class="op-duration">${scaledDur}</td>
+              <td style="text-align:center; padding:10px 12px;">
+                <button type="button" class="remove-btn remove-operation-btn">✕</button>
+              </td>
+            `;
+            opTbody.appendChild(tr);
+
+            // Bind remove button
+            tr.querySelector(".remove-operation-btn").addEventListener("click", () => tr.remove());
+          });
+        } else {
+          compTbody.innerHTML = `<tr class="empty-components-row"><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 15px;">No components required.</td></tr>`;
+          opTbody.innerHTML = `<tr class="empty-operations-row"><td colspan="4" style="text-align:center; color:var(--text-muted); padding: 15px;">No operations specified.</td></tr>`;
+        }
+      });
+    }
+
+    // Dynamic scaling of components and operations expected durations on quantity change
+    const qtyInput = document.getElementById("detail-mo-qty");
+    if (qtyInput) {
+      qtyInput.addEventListener("input", () => {
+        const qty = parseFloat(qtyInput.value) || 0;
+
+        // Scale components
+        document.querySelectorAll(".component-row").forEach(row => {
+          const unitNeeded = parseFloat(row.dataset.unitNeeded) || 0;
+          const totalNeeded = (unitNeeded * qty).toFixed(2);
+          row.querySelector(".comp-to-consume").innerText = totalNeeded;
+
+          // Recalculate availability
+          const prodId = row.dataset.productId;
+          const prodData = productsData[prodId];
+          if (prodData) {
+            const freeStock = prodData.free_to_use;
+            const badge = row.querySelector(".badge");
+            if (badge) {
+              if (freeStock >= totalNeeded) {
+                badge.className = "badge badge-completed";
+                badge.innerText = "Available";
+              } else {
+                badge.className = "badge badge-cancelled";
+                badge.innerText = "Not Available";
+              }
+            }
+          }
+        });
+
+        // Scale operations expected duration
+        document.querySelectorAll(".operation-row").forEach(row => {
+          const durationPerUnit = parseFloat(row.dataset.durationPerUnit) || 0;
+          const expectedDuration = Math.ceil(durationPerUnit * qty);
+          row.querySelector(".op-duration").innerText = expectedDuration;
+        });
+      });
+    }
+
+    // Bind remove component buttons for initially loaded items
+    document.querySelectorAll(".remove-component-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const row = e.target.closest(".component-row");
+        if (row) row.remove();
+      });
+    });
+
+    // Bind remove operation buttons for initially loaded items
+    document.querySelectorAll(".remove-operation-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const row = e.target.closest(".operation-row");
+        if (row) row.remove();
+      });
+    });
+
+    // Add Component Line (Draft mode only)
+    const btnAddComponent = document.getElementById("btn-add-component-line");
+    if (btnAddComponent) {
+      btnAddComponent.addEventListener("click", () => {
+        const select = document.getElementById("add-component-select");
+        const qtyInput = document.getElementById("add-component-qty");
+        const productId = select.value;
+        const qty = parseFloat(qtyInput.value) || 1;
+
+        if (!productId) {
+          showToast("Please select a component product.", "error");
+          return;
+        }
+
+        const prodData = productsData[productId];
+        if (!prodData) return;
+
+        // Check if already exists in table
+        let exists = false;
+        document.querySelectorAll(".component-row").forEach(row => {
+          if (row.dataset.productId == productId) exists = true;
+        });
+
+        if (exists) {
+          showToast("Component is already in the list.", "error");
+          return;
+        }
+
+        const compTbody = document.getElementById("components-tbody");
+        // Remove empty row if present
+        const emptyRow = compTbody.querySelector(".empty-components-row");
+        if (emptyRow) emptyRow.remove();
+
+        const currentMOQty = parseFloat(document.getElementById("detail-mo-qty").value) || 1;
+        const unitNeeded = qty / currentMOQty;
+
+        const freeStock = prodData.free_to_use;
+        const statusClass = freeStock >= qty ? 'badge-completed' : 'badge-cancelled';
+        const statusText = freeStock >= qty ? 'Available' : 'Not Available';
+
+        const tr = document.createElement("tr");
+        tr.className = "component-row";
+        tr.style.fontSize = "13px";
+        tr.dataset.productId = productId;
+        tr.dataset.unitNeeded = unitNeeded;
+        tr.innerHTML = `
+          <td style="font-weight:600; padding:10px 12px;" class="comp-name">${prodData.name}</td>
+          <td style="text-align:center; font-weight:700; padding:10px 12px;" class="comp-to-consume">${qty.toFixed(2)}</td>
+          <td style="text-align:center; padding:10px 12px;">
+            <span class="comp-consumed-text">0</span>
+          </td>
+          <td style="padding:10px 12px;">
+            <span class="badge ${statusClass}" style="padding: 2px 6px; font-size:10px;">${statusText}</span>
+          </td>
+          <td style="text-align:center; padding:10px 12px;">
+            <button type="button" class="remove-btn remove-component-btn">✕</button>
+          </td>
+        `;
+        compTbody.appendChild(tr);
+
+        // Bind remove button
+        tr.querySelector(".remove-component-btn").addEventListener("click", () => tr.remove());
+
+        // Reset inputs
+        select.value = "";
+        qtyInput.value = "1";
+      });
+    }
+
+    // Add Operation Line (Draft mode only)
+    const btnAddOperation = document.getElementById("btn-add-operation-line");
+    if (btnAddOperation) {
+      btnAddOperation.addEventListener("click", () => {
+        const nameInput = document.getElementById("add-operation-name");
+        const wcInput = document.getElementById("add-operation-workcenter");
+        const durInput = document.getElementById("add-operation-duration");
+
+        const name = nameInput.value.trim();
+        const wc = wcInput.value.trim();
+        const dur = parseInt(durInput.value) || 30;
+
+        if (!name || !wc) {
+          showToast("Operation name and Work Center are required.", "error");
+          return;
+        }
+
+        const opTbody = document.getElementById("operations-tbody");
+        // Remove empty row if present
+        const emptyRow = opTbody.querySelector(".empty-operations-row");
+        if (emptyRow) emptyRow.remove();
+
+        const currentMOQty = parseFloat(document.getElementById("detail-mo-qty").value) || 1;
+        const durationPerUnit = dur / currentMOQty;
+
+        const tr = document.createElement("tr");
+        tr.className = "operation-row";
+        tr.style.fontSize = "13px";
+        tr.dataset.durationPerUnit = durationPerUnit;
+        tr.innerHTML = `
+          <td style="font-weight:600; padding:10px 12px;" class="op-name">${name}</td>
+          <td style="padding:10px 12px;" class="op-workcenter">${wc}</td>
+          <td style="text-align:center; font-weight:700; padding:10px 12px;" class="op-duration">${dur}</td>
+          <td style="text-align:center; padding:10px 12px;">
+            <button type="button" class="remove-btn remove-operation-btn">✕</button>
+          </td>
+        `;
+        opTbody.appendChild(tr);
+
+        // Bind remove button
+        tr.querySelector(".remove-operation-btn").addEventListener("click", () => tr.remove());
+
+        // Reset inputs
+        nameInput.value = "";
+        wcInput.value = "";
+        durInput.value = "30";
+      });
+    }
+
     // Start ticking timers for existing active work orders
     document.querySelectorAll(".wo-timer").forEach(timerEl => {
       const status = timerEl.dataset.status;
@@ -228,6 +1399,15 @@
           seconds++;
           timerEl.innerText = formatTimerValue(seconds);
           timerEl.dataset.seconds = seconds;
+          
+          // Auto-update real duration input field (in minutes)
+          const row = timerEl.closest(".operation-row");
+          if (row) {
+            const realDurInput = row.querySelector(".op-real-duration-input");
+            if (realDurInput) {
+              realDurInput.value = Math.ceil(seconds / 60);
+            }
+          }
         }, 1000);
       } else {
         timerEl.innerText = formatTimerValue(seconds);
@@ -243,23 +1423,58 @@
           fetch(`/manufacturing/${id}/confirm/`, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-              showToast("MO Confirmed: materials reserved.", "success");
-              setTimeout(() => window.location.reload(), 1000);
+              if (data.status === 'success') {
+                showToast(data.message, "success");
+                setTimeout(() => window.location.reload(), 1000);
+              } else {
+                showToast(data.message, "error");
+              }
             });
         });
       }
 
-      // Force Complete MO action
-      const forceBtn = document.getElementById("btn-cockpit-force-finish-mo");
-      if (forceBtn) {
-        forceBtn.addEventListener("click", () => {
-          const id = forceBtn.dataset.id;
-          fetch(`/manufacturing/${id}/complete/`, { method: 'POST' })
+      // Start MO action
+      const startMOBtn = document.getElementById("btn-cockpit-start-mo");
+      if (startMOBtn) {
+        startMOBtn.addEventListener("click", () => {
+          const id = startMOBtn.dataset.id;
+          fetch(`/manufacturing/${id}/start/`, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-              showToast("Manufacturing completed manually. Finished goods added to stock.", "success");
-              setTimeout(() => window.location.reload(), 1000);
+              if (data.status === 'success') {
+                showToast(data.message, "success");
+                setTimeout(() => window.location.reload(), 1000);
+              } else {
+                showToast(data.message, "error");
+              }
             });
+        });
+      }
+
+      // Produce MO action
+      const completeBtn = document.getElementById("btn-cockpit-complete-mo");
+      if (completeBtn) {
+        completeBtn.addEventListener("click", () => {
+          const id = completeBtn.dataset.id;
+          
+          // Save consumed quantities and durations first!
+          const saveBtn = document.getElementById("btn-cockpit-save-mo");
+          if (saveBtn) {
+            saveBtn.click(); // trigger form save
+          }
+          
+          setTimeout(() => {
+            fetch(`/manufacturing/${id}/complete/`, { method: 'POST' })
+              .then(res => res.json())
+              .then(data => {
+                if (data.status === 'success') {
+                  showToast("Manufacturing completed: inventory records updated.", "success");
+                  setTimeout(() => window.location.reload(), 1000);
+                } else {
+                  showToast(data.message, "error");
+                }
+              });
+          }, 500);
         });
       }
 
@@ -268,7 +1483,7 @@
       if (cancelMOBtn) {
         cancelMOBtn.addEventListener("click", () => {
           const id = cancelMOBtn.dataset.id;
-          if (!confirm(`Cancel MO-${String(id).padStart(3,'0')}? This will release all component reservations.`)) return;
+          if (!confirm(`Cancel MO? This will release all component reservations.`)) return;
           fetch(`/manufacturing/${id}/cancel/`, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
@@ -282,16 +1497,89 @@
         });
       }
 
-      // QC Complete action
-      const completeBtn = document.getElementById("btn-cockpit-complete-mo");
-      if (completeBtn) {
-        completeBtn.addEventListener("click", () => {
-          const id = completeBtn.dataset.id;
-          fetch(`/manufacturing/${id}/complete/`, { method: 'POST' })
+      // Save Changes action
+      const saveBtn = document.getElementById("btn-cockpit-save-mo");
+      if (saveBtn) {
+        saveBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          const moId = saveBtn.dataset.id;
+          const status = "{{ selected_mo.status }}";
+
+          const fd = new FormData();
+
+          if (status === 'draft') {
+            fd.append('productId', document.getElementById("detail-mo-product").value);
+            fd.append('quantity', document.getElementById("detail-mo-qty").value);
+            fd.append('bomId', document.getElementById("detail-mo-bom").value);
+          }
+
+          const assigneeSelect = document.getElementById("detail-mo-assignee");
+          if (assigneeSelect) {
+            fd.append('assignee', assigneeSelect.value);
+          }
+
+          const dateInput = document.getElementById("detail-mo-date");
+          if (dateInput) {
+            fd.append('plannedDate', dateInput.value);
+          }
+
+          const notesTextarea = document.getElementById("detail-mo-notes");
+          if (notesTextarea) {
+            fd.append('notes', notesTextarea.value);
+          }
+
+          // Serialize components
+          const components = [];
+          document.querySelectorAll(".component-row").forEach(row => {
+            if (status === 'draft') {
+              components.push({
+                productId: row.dataset.productId,
+                quantity: row.querySelector(".comp-to-consume").innerText
+              });
+            } else {
+              const input = row.querySelector(".comp-consumed-input");
+              if (input) {
+                components.push({
+                  id: row.dataset.id,
+                  consumed: input.value
+                });
+              }
+            }
+          });
+          fd.append('components', JSON.stringify(components));
+
+          // Serialize operations
+          const operations = [];
+          document.querySelectorAll(".operation-row").forEach(row => {
+            if (status === 'draft') {
+              operations.push({
+                name: row.querySelector(".op-name").innerText,
+                workCenter: row.querySelector(".op-workcenter").innerText,
+                duration: row.querySelector(".op-duration").innerText
+              });
+            } else {
+              const input = row.querySelector(".op-real-duration-input");
+              if (input) {
+                operations.push({
+                  id: row.dataset.id,
+                  realDuration: input.value
+                });
+              }
+            }
+          });
+          fd.append('operations', JSON.stringify(operations));
+
+          fetch(`/manufacturing/${moId}/edit/`, { method: 'POST', body: fd })
             .then(res => res.json())
             .then(data => {
-              showToast("QC Approved: inventory records processed.", "success");
-              setTimeout(() => window.location.reload(), 1000);
+              if (data.status === 'success') {
+                showToast(data.message, "success");
+                // Only reload if we are not complete-triggered
+                if (!e.isTrusted) return; 
+                setTimeout(() => window.location.reload(), 1000);
+              } else {
+                showToast(data.message, "error");
+              }
             });
         });
       }
@@ -303,8 +1591,12 @@
           fetch(`/manufacturing/workorder/${id}/start/`, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-              showToast("Work center started operations.", "success");
-              setTimeout(() => window.location.reload(), 800);
+              if (data.status === 'success') {
+                showToast("Work center started operations.", "success");
+                setTimeout(() => window.location.reload(), 800);
+              } else {
+                showToast(data.message, "error");
+              }
             });
         });
       });
@@ -314,15 +1606,19 @@
         btn.addEventListener("click", () => {
           const id = btn.dataset.wo;
           const seconds = document.getElementById(`timer-${id}`).dataset.seconds || 0;
-          
+
           const fd = new FormData();
           fd.append('elapsed_seconds', seconds);
 
           fetch(`/manufacturing/workorder/${id}/complete/`, { method: 'POST', body: fd })
             .then(res => res.json())
             .then(data => {
-              showToast("Work Order completed.", "success");
-              setTimeout(() => window.location.reload(), 800);
+              if (data.status === 'success') {
+                showToast("Work Order completed.", "success");
+                setTimeout(() => window.location.reload(), 800);
+              } else {
+                showToast(data.message, "error");
+              }
             });
         });
       });
@@ -332,7 +1628,7 @@
     {% if permissions.can_edit_manufacturing and not permissions.is_read_only %}
       const modal = document.getElementById("mo-create-modal");
       document.getElementById("btn-open-create-mo-modal").addEventListener("click", () => modal.style.display = "flex");
-      
+
       const hideModal = () => modal.style.display = "none";
       document.getElementById("close-mo-modal").addEventListener("click", hideModal);
       document.getElementById("cancel-mo-modal").addEventListener("click", hideModal);
@@ -340,8 +1636,11 @@
       document.getElementById("mo-create-form").addEventListener("submit", (e) => {
         e.preventDefault();
         const fd = new FormData();
+        fd.append('orderNumber', document.getElementById("mo-id").value);
         fd.append('productId', document.getElementById("mo-product").value);
         fd.append('quantity', document.getElementById("mo-qty").value);
+        fd.append('bomId', document.getElementById("mo-bom").value);
+        fd.append('plannedDate', document.getElementById("mo-date").value);
         fd.append('assignee', document.getElementById("mo-assignee").value);
 
         fetch('/manufacturing/create/', { method: 'POST', body: fd })
@@ -357,6 +1656,54 @@
           });
       });
     {% endif %}
+
+    // Manufacturing Logs Modal Logic
+    const mfgLogsModal = document.getElementById("mfg-logs-modal");
+    document.getElementById("btn-mfg-logs").addEventListener("click", () => {
+      mfgLogsModal.style.display = "flex";
+    });
   });
+  function closeMfgLogsModal() {
+    document.getElementById("mfg-logs-modal").style.display = "none";
+  }
 </script>
+
+<!-- AUDIT LOGS MODAL -->
+<div class="modal-overlay" id="mfg-logs-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 800px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Audit Logs (Module: Manufacturing Orders)</h3>
+      <button class="modal-close" onclick="closeMfgLogsModal()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+      <table class="erp-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Action</th>
+            <th>Operator</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in mfg_logs %}
+            <tr style="font-size:12px;">
+              <td style="white-space:nowrap; color:var(--text-muted);">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+              <td style="font-weight:700;">{{ log.action }}</td>
+              <td style="font-weight:600;">{{ log.user }}</td>
+              <td>{{ log.details }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" style="text-align:center; color:var(--text-muted); padding:16px;">No audit logs recorded for Manufacturing Orders.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeMfgLogsModal()">Close</button>
+    </div>
+  </div>
+</div>
 {% endblock %}

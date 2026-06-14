@@ -22,6 +22,18 @@ class AuditLog(models.Model):
     details = models.TextField()
     user = models.CharField(max_length=100, default='System')
 
+    # New fields for detailed Audit Logs view
+    record_id = models.CharField(max_length=50, blank=True, default='', verbose_name='Record ID')
+    record_type = models.CharField(max_length=50, blank=True, default='', verbose_name='Record Type')
+    field_changed = models.CharField(max_length=50, blank=True, default='-', verbose_name='Field Changed')
+    old_value = models.CharField(max_length=100, blank=True, default='-', verbose_name='Old Value')
+    new_value = models.CharField(max_length=100, blank=True, default='-', verbose_name='New Value')
+    action_type = models.CharField(
+        max_length=20, default='Create',
+        choices=[('Create', 'Create'), ('Update', 'Update'), ('Delete', 'Delete')],
+        verbose_name='Action Type'
+    )
+
     @property
     def created_at(self):
         """Odoo-aligned alias for timestamp."""

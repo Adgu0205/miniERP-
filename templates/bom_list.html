@@ -5,229 +5,920 @@
 {% block heading %}Bills of Material (BoMs){% endblock %}
 
 {% block content %}
-<div class="panel-header" style="background-color:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--border-radius-lg); padding:20px 24px; margin-bottom:24px; box-shadow:var(--shadow-sm); display:flex; justify-content:space-between; align-items:center;">
-  <h3 class="panel-title">Bill of Materials (BoMs)</h3>
-  {% if permissions.can_edit_bom and not permissions.is_read_only %}
-    <button class="btn btn-primary btn-sm" id="btn-open-create-bom-modal">+ Create BoM Recipe</button>
-  {% endif %}
-</div>
+<!-- Style Customizations -->
+<style>
+  .card-panel {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+  }
 
-<!-- BoMs card grid -->
-<div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:24px;">
-  {% for bom in boms %}
-    <div class="card-panel" style="margin-bottom:0; height:100%;">
-      <div class="panel-header" style="border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:16px;">
-        <h4 class="panel-title" style="font-size:16px; color:var(--text-primary);">{{ bom.name }}</h4>
-        <span class="badge badge-mto" style="font-size:11px;">Active Recipe</span>
-      </div>
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+  }
 
-      <div style="margin-bottom:20px;">
-        <h5 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px;">1. Required Components</h5>
-        <div class="lines-list" style="margin-top:0;">
-          <div class="line-header" style="grid-template-columns: 2fr 1fr; border:none; padding:6px 12px; background-color:var(--bg-secondary);">
-            <span>Component Name</span>
-            <span style="text-align:right;">Quantity</span>
-          </div>
-          {% for comp in bom.components.all %}
-            <div class="line-item-row" style="grid-template-columns: 2fr 1fr; padding:8px 12px;">
-              <span style="font-weight:600;">{{ comp.product.name }}</span>
-              <span style="text-align:right; font-weight:700;">{{ comp.quantity }} units</span>
-            </div>
-          {% endfor %}
-        </div>
-      </div>
+  .panel-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
 
-      <div>
-        <h5 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px;">2. Operation Routing Steps</h5>
-        <div class="timeline" style="padding-left:16px;">
-          {% for op in bom.operations.all %}
-            <div class="timeline-item" style="padding-bottom:12px;">
-              <div class="timeline-dot green" style="top:2px; width:8px; height:8px; left:-16px;"></div>
-              <div class="timeline-content" style="font-size:13px;">
-                <strong style="color:var(--text-primary);">{{ op.name }}</strong> at 
-                <span style="color:var(--accent-hover); font-weight:600;">{{ op.work_center }}</span> 
-                <span style="color:var(--text-muted); font-size:11px;">({{ op.duration }} mins)</span>
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-      </div>
+  /* List view list-row */
+  .list-row:hover {
+    background-color: var(--bg-secondary);
+  }
+
+  /* Sequence box dashed border */
+  .seq-box {
+    border: 2px dashed var(--border-color);
+    padding: 8px 12px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: inline-block;
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 20px;
+    background-color: var(--bg-secondary);
+  }
+
+  /* Form Elements */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: border-color var(--transition-fast);
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--accent-color);
+  }
+
+  .form-control:disabled, .form-control[readonly] {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+  }
+
+  /* Tabbed layout */
+  .tabs-header {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 20px;
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all var(--transition-fast);
+  }
+
+  .tab-btn.active {
+    color: var(--accent-hover);
+    border-bottom-color: var(--accent-hover);
+  }
+
+  /* Table styles */
+  .erp-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background-color: var(--bg-tertiary);
+  }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 2px 6px;
+    font-size: 14px;
+  }
+
+  .remove-btn:hover {
+    color: #b91c1c;
+  }
+
+  .clickable-product {
+    color: var(--accent-hover);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .clickable-product:hover {
+    color: var(--accent-color);
+  }
+</style>
+
+<!-- ==============================================
+     1. MAIN LIST VIEW
+     ============================================== -->
+<div id="bom-list-view" class="card-panel">
+  <div class="panel-header">
+    <h3 class="panel-title">Bills of Material</h3>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <button class="btn btn-secondary btn-sm" id="btn-bom-list-logs">Logs</button>
+      {% if permissions.can_edit_bom and not permissions.is_read_only %}
+        <button class="btn btn-primary btn-sm" id="btn-open-create-bom">+ Create BoM Recipe</button>
+      {% endif %}
     </div>
-  {% empty %}
-    <p style="text-align:center; color:var(--text-muted); grid-column:span 2; margin-top:40px;">No Bills of Material registered.</p>
-  {% endfor %}
-</div>
+  </div>
 
-<!-- BoM Creation Modal -->
-<div class="modal-overlay" id="bom-create-modal" style="display:none;">
-  <div class="modal-content" style="max-width: 720px;">
-    <div class="modal-header">
-      <h3 class="modal-title">Create Manufacturing Recipe (BoM)</h3>
-      <button class="modal-close" id="close-bom-modal">✕</button>
-    </div>
-    <form id="bom-create-form">
-      <div class="modal-body" style="max-height:60vh; overflow-y:auto;">
-        
-        <div class="form-group" style="margin-bottom:16px;">
-          <label for="bom-product">Finished Product Link *</label>
-          <select id="bom-product" class="form-control" required>
-            <option value="" disabled selected>Select finished furniture product...</option>
-            {% for p in products_without_boms %}
-              <option value="{{ p.id }}">{{ p.name }} ({{ p.sku }})</option>
-            {% empty %}
-              <option value="" disabled>No recipe-free finished goods available</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- Ingredients section -->
-        <div style="margin-top:24px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary);">1. Components & Quantities</h4>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-bom-component">+ Add Component</button>
-          </div>
-          <div class="lines-list">
-            <div class="line-header" style="grid-template-columns: 2fr 1fr 40px;">
-              <span>Component Name</span>
-              <span style="text-align:right;">Quantity Per Finished Unit</span>
-              <span></span>
-            </div>
-            <div id="bom-components-container">
-              <!-- Rows render dynamically -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Operations section -->
-        <div style="margin-top:24px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-secondary);">2. Operation Routing Steps</h4>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-bom-operation">+ Add Operation</button>
-          </div>
-          <div class="lines-list">
-            <div class="line-header" style="grid-template-columns: 1.5fr 1.5fr 1fr 40px;">
-              <span>Operation</span>
-              <span>Work Center</span>
-              <span style="text-align:right;">Duration (Mins)</span>
-              <span></span>
-            </div>
-            <div id="bom-operations-container">
-              <!-- Rows render dynamically -->
-            </div>
-          </div>
-        </div>
-
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" id="cancel-bom-modal">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save BoM Recipe</button>
-      </div>
-    </form>
+  <div class="table-responsive">
+    <table class="erp-table">
+      <thead>
+        <tr>
+          <th>Reference ID</th>
+          <th>Finished Product</th>
+          <th style="text-align:center;">Quantity</th>
+          <th>Units</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bom in boms %}
+          <tr class="list-row" style="border-bottom:1px solid var(--border-color);">
+            <td style="font-weight:700;">{{ bom.bom_code }}</td>
+            <td>
+              <span class="clickable-product" onclick="showProductDetails({{ bom.product.id }})">
+                {{ bom.product.name }}
+              </span>
+            </td>
+            <td style="text-align:center; font-weight:700;">{{ bom.quantity_produced|floatformat:0 }}</td>
+            <td style="color:var(--text-secondary);">{{ bom.product.uom }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" style="text-align:center; color:var(--text-muted); padding:24px;">No Bills of Material registered.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 
-<script>
-  const dbComponents = [
+<!-- ==============================================
+     2. CREATE / EDIT FORM VIEW (INLINE DOCUMENT-STYLE)
+     ============================================== -->
+<div id="bom-form-view" class="card-panel" style="display:none; max-width: 900px; margin: 0 auto;">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:16px; margin-bottom:20px;">
+    <div style="display:flex; gap:10px;">
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-bom-back">Back</button>
+      {% if permissions.can_edit_bom and not permissions.is_read_only %}
+        <button type="button" class="btn btn-primary btn-sm" id="btn-bom-save">Save</button>
+      {% endif %}
+    </div>
+    <h3 class="panel-title" style="margin:0;">Bill of Materials</h3>
+    <button type="button" class="btn btn-secondary btn-sm" id="btn-bom-logs">Logs</button>
+  </div>
+
+  <form id="bom-create-form">
+    <!-- Sequence Code dashed box -->
+    <div class="seq-box" id="bom-code-sequence">
+      {{ next_bom_ref }}
+    </div>
+
+    <!-- Core Fields Grid -->
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="bom-product">Finished Product *</label>
+        <select id="bom-product" class="form-control" required>
+          <option value="" disabled selected>Select finished product...</option>
+          {% for p in products_without_boms %}
+            <option value="{{ p.id }}">{{ p.name }} ({{ p.sku }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="bom-qty">Quantity *</label>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input type="number" id="bom-qty" class="form-control" min="1" value="1" style="max-width:120px;" required>
+          <span style="font-weight:600; color:var(--text-secondary);" id="bom-uom-label">Units</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bom-ref">Reference</label>
+        <input type="text" id="bom-ref" class="form-control" maxlength="8" placeholder="Max 8 chars...">
+      </div>
+    </div>
+
+    <!-- Tabs section -->
+    <div class="tabs-header">
+      <button type="button" class="tab-btn active" id="tab-components-btn">Components</button>
+      <button type="button" class="tab-btn" id="tab-operations-btn">Work Orders</button>
+    </div>
+
+    <!-- Components Tab Pane -->
+    <div id="tab-components-pane">
+      <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-md); overflow:hidden; margin-bottom:15px;">
+        <table class="erp-table" style="background-color: var(--bg-secondary);" id="components-table">
+          <thead>
+            <tr style="font-size:11px; text-transform:uppercase; background-color:var(--bg-tertiary);">
+              <th style="padding:10px 12px;">Components</th>
+              <th style="text-align:center; padding:10px 12px; width:150px;">To consume</th>
+              <th style="padding:10px 12px; width:100px;">Units</th>
+              <th style="text-align:center; padding:10px 12px; width:60px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="components-tbody">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-add-component-row">Add a product</button>
+    </div>
+
+    <!-- Operations Tab Pane -->
+    <div id="tab-operations-pane" style="display:none;">
+      <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-md); overflow:hidden; margin-bottom:15px;">
+        <table class="erp-table" style="background-color: var(--bg-secondary);" id="operations-table">
+          <thead>
+            <tr style="font-size:11px; text-transform:uppercase; background-color:var(--bg-tertiary);">
+              <th style="padding:10px 12px;">Operations</th>
+              <th style="padding:10px 12px; width:250px;">Work Center</th>
+              <th style="text-align:center; padding:10px 12px; width:150px;">Expected Duration (mins)</th>
+              <th style="text-align:center; padding:10px 12px; width:60px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="operations-tbody">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-add-operation-row">Add a line</button>
+    </div>
+  </form>
+</div>
+
+<!-- ==============================================
+     3. PRODUCT DETAILS MODAL (CLICK ON FINISHED GOOD)
+     ============================================== -->
+<div class="modal-overlay" id="product-details-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 650px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="product-details-title">Finished Product Form View</h3>
+      <button class="modal-close" onclick="closeProductDetails()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="product-edit-form">
+        <input type="hidden" id="modal-product-id">
+        <div class="form-grid" id="product-modal-fields">
+          <!-- Populated by JS -->
+        </div>
+      </form>
+
+      <!-- BoM Recipe Section -->
+      <div id="modal-recipe-section" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px; display: none;">
+        <h4 style="font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--text-primary); text-align: left;">BoM Recipe: <span id="modal-recipe-code" style="color:var(--accent-hover);"></span></h4>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <!-- Components -->
+          <div>
+            <h5 style="font-size:12px; font-weight:600; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px; text-align: left;">Components</h5>
+            <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); overflow:hidden;">
+              <table class="erp-table" style="font-size:12px; width:100%;">
+                <thead>
+                  <tr style="background-color: var(--bg-secondary);">
+                    <th style="padding:6px 10px; font-size:11px;">Component</th>
+                    <th style="padding:6px 10px; text-align:center; font-size:11px; width:80px;">Qty</th>
+                  </tr>
+                </thead>
+                <tbody id="modal-recipe-components">
+                  <!-- Filled by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Operations -->
+          <div>
+            <h5 style="font-size:12px; font-weight:600; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px; text-align: left;">Operations</h5>
+            <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); overflow:hidden;">
+              <table class="erp-table" style="font-size:12px; width:100%;">
+                <thead>
+                  <tr style="background-color: var(--bg-secondary);">
+                    <th style="padding:6px 10px; font-size:11px;">Operation</th>
+                    <th style="padding:6px 10px; text-align:center; font-size:11px; width:70px;">Mins</th>
+                  </tr>
+                </thead>
+                <tbody id="modal-recipe-operations">
+                  <!-- Filled by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content: space-between;">
+      <button type="button" class="btn btn-secondary" onclick="closeProductDetails()">Back to List</button>
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="btn btn-primary" id="btn-modal-create-bom" style="background-color:var(--accent-hover);">Create New BOM</button>
+        {% if permissions.can_edit_products and not permissions.is_read_only %}
+          <button type="button" class="btn btn-primary" id="btn-modal-edit-product">Edit Product</button>
+          <button type="button" class="btn btn-primary" id="btn-modal-save-product" style="display:none; background-color:var(--accent-hover);">Save Product</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==============================================
+     4. AUDIT LOGS MODAL (BOM MODULE LOGS)
+     ============================================== -->
+<div class="modal-overlay" id="bom-logs-modal" style="display:none;">
+  <div class="modal-content" style="max-width: 800px;">
+    <div class="modal-header">
+      <h3 class="modal-title">Audit Logs (Module: BoM)</h3>
+      <button class="modal-close" onclick="closeLogsModal()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+      <table class="erp-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Action</th>
+            <th>Operator</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in bom_logs %}
+            <tr style="font-size:12px;">
+              <td style="white-space:nowrap; color:var(--text-muted);">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+              <td style="font-weight:700;">{{ log.action }}</td>
+              <td style="font-weight:600;">{{ log.user }}</td>
+              <td>{{ log.details }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" style="text-align:center; color:var(--text-muted); padding:16px;">No audit logs recorded for BoM.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeLogsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- JSON databases -->
+<script id="components-data" type="application/json">
+  [
     {% for c in components %}
-    { id: "{{ c.id }}", name: "{{ c.name|escapejs }}", sku: "{{ c.sku }}" },
+      {
+        "id": {{ c.id }},
+        "name": "{{ c.name|escapejs }}",
+        "sku": "{{ c.sku|escapejs }}",
+        "uom": "{{ c.uom|escapejs }}"
+      }{% if not forloop.last %},{% endif %}
     {% endfor %}
-  ];
+  ]
+</script>
 
+<script id="products-data" type="application/json">
+  {
+    {% for p in products %}
+      "{{ p.id }}": {
+        "id": {{ p.id }},
+        "name": "{{ p.name|escapejs }}",
+        "sku": "{{ p.sku|escapejs }}",
+        "category": "{{ p.category|escapejs }}",
+        "sales_price": {{ p.sales_price }},
+        "cost_price": {{ p.cost_price }},
+        "on_hand": {{ p.on_hand }},
+        "uom": "{{ p.uom|escapejs }}",
+        "procure_strategy": "{{ p.procure_strategy|escapejs }}",
+        "procurement_type": "{{ p.procurement_type|escapejs }}",
+        "vendor": "{{ p.vendor|default_if_none:''|escapejs }}"
+      }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  }
+</script>
+
+<script id="boms-data" type="application/json">
+  {
+    {% for b in boms %}
+      "{{ b.product.id }}": {
+        "id": {{ b.id }},
+        "bom_code": "{{ b.bom_code|escapejs }}",
+        "quantity_produced": {{ b.quantity_produced }},
+        "reference": "{{ b.reference|escapejs }}",
+        "components": [
+          {% for comp in b.components.all %}
+            {
+              "name": "{{ comp.product.name|escapejs }}",
+              "sku": "{{ comp.product.sku|escapejs }}",
+              "quantity": {{ comp.quantity }},
+              "uom": "{{ comp.product.uom|escapejs }}"
+            }{% if not forloop.last %},{% endif %}
+          {% endfor %}
+        ],
+        "operations": [
+          {% for op in b.operations.all %}
+            {
+              "operation_name": "{{ op.operation_name|escapejs }}",
+              "work_center": "{{ op.work_center|escapejs }}",
+              "duration_minutes": {{ op.duration_minutes }}
+            }{% if not forloop.last %},{% endif %}
+          {% endfor %}
+        ]
+      }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  }
+</script>
+
+<script>
+  const dbComponents = JSON.parse(document.getElementById("components-data").textContent);
+  const productsData = JSON.parse(document.getElementById("products-data").textContent);
+  const bomsData = JSON.parse(document.getElementById("boms-data").textContent);
+
+
+
+  // ----------------------------------------------------
+  // Product Detail Dialog logic
+  // ----------------------------------------------------
+  const productModal = document.getElementById("product-details-modal");
+  const modalFields = document.getElementById("product-modal-fields");
+
+  function showProductDetails(productId) {
+    const prod = productsData[productId];
+    if (!prod) return;
+
+    document.getElementById("modal-product-id").value = productId;
+    document.getElementById("product-details-title").innerText = `${prod.name} Form View`;
+
+    modalFields.innerHTML = `
+      <div class="form-group">
+        <label>SKU</label>
+        <input type="text" id="modal-sku" class="form-control" value="${prod.sku}" readonly>
+      </div>
+      <div class="form-group">
+        <label>Product Name</label>
+        <input type="text" id="modal-name" class="form-control" value="${prod.name}" readonly>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="modal-category" class="form-control" disabled>
+          <option value="Furniture" ${prod.category === 'Furniture' ? 'selected' : ''}>Furniture</option>
+          <option value="Components" ${prod.category === 'Components' ? 'selected' : ''}>Components</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Sales Price (₹)</label>
+        <input type="number" id="modal-sales-price" class="form-control" value="${prod.sales_price}" step="0.01" readonly>
+      </div>
+      <div class="form-group">
+        <label>Cost Price (₹)</label>
+        <input type="number" id="modal-cost-price" class="form-control" value="${prod.cost_price}" step="0.01" readonly>
+      </div>
+      <div class="form-group">
+        <label>On Hand Quantity</label>
+        <input type="number" class="form-control" value="${prod.on_hand}" readonly style="background-color: var(--bg-tertiary);">
+      </div>
+      <div class="form-group">
+        <label>Unit of Measure</label>
+        <input type="text" class="form-control" value="${prod.uom}" readonly style="background-color: var(--bg-tertiary);">
+      </div>
+      <div class="form-group">
+        <label>Procurement Strategy</label>
+        <select id="modal-procure-strategy" class="form-control" disabled>
+          <option value="MTS" ${prod.procure_strategy === 'MTS' ? 'selected' : ''}>Make To Stock (MTS)</option>
+          <option value="MTO" ${prod.procure_strategy === 'MTO' ? 'selected' : ''}>Make To Order (MTO)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Procurement Type</label>
+        <select id="modal-procure-type" class="form-control" disabled>
+          <option value="None" ${prod.procurement_type === 'None' ? 'selected' : ''}>None</option>
+          <option value="Manufacturing" ${prod.procurement_type === 'Manufacturing' ? 'selected' : ''}>Manufacturing</option>
+          <option value="Purchase" ${prod.procurement_type === 'Purchase' ? 'selected' : ''}>Purchase</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Vendor</label>
+        <input type="text" id="modal-vendor" class="form-control" value="${prod.vendor}" readonly>
+      </div>
+    `;
+
+    // Ensure save button is hidden and edit button shown
+    const editBtn = document.getElementById("btn-modal-edit-product");
+    const saveBtn = document.getElementById("btn-modal-save-product");
+    if (editBtn) editBtn.style.display = "inline-block";
+    if (saveBtn) saveBtn.style.display = "none";
+
+    // Show/hide Recipe details based on existence of BoM
+    const bom = bomsData[productId];
+    const recipeSection = document.getElementById("modal-recipe-section");
+    const createBomBtn = document.getElementById("btn-modal-create-bom");
+
+    if (bom) {
+      document.getElementById("modal-recipe-code").innerText = bom.bom_code;
+      
+      // Populate components
+      const compsTbody = document.getElementById("modal-recipe-components");
+      compsTbody.innerHTML = "";
+      if (bom.components && bom.components.length > 0) {
+        bom.components.forEach(c => {
+          const tr = document.createElement("tr");
+          tr.style.borderBottom = "1px solid var(--border-color)";
+          tr.innerHTML = `
+            <td style="padding:6px 10px; text-align: left;">${c.name}</td>
+            <td style="padding:6px 10px; text-align:center; font-weight:700;">${parseFloat(c.quantity)} <span style="font-weight:normal; color:var(--text-secondary);">${c.uom}</span></td>
+          `;
+          compsTbody.appendChild(tr);
+        });
+      } else {
+        compsTbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding:10px;">No components</td></tr>`;
+      }
+
+      // Populate operations
+      const opsTbody = document.getElementById("modal-recipe-operations");
+      opsTbody.innerHTML = "";
+      if (bom.operations && bom.operations.length > 0) {
+        bom.operations.forEach(op => {
+          const tr = document.createElement("tr");
+          tr.style.borderBottom = "1px solid var(--border-color)";
+          tr.innerHTML = `
+            <td style="padding:6px 10px; text-align: left;">${op.operation_name} <br><small style="color:var(--text-secondary);">${op.work_center}</small></td>
+            <td style="padding:6px 10px; text-align:center; font-weight:700;">${op.duration_minutes}</td>
+          `;
+          opsTbody.appendChild(tr);
+        });
+      } else {
+        opsTbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding:10px;">No operations</td></tr>`;
+      }
+
+      recipeSection.style.display = "block";
+      if (createBomBtn) createBomBtn.style.display = "none";
+    } else {
+      recipeSection.style.display = "none";
+      if (createBomBtn) createBomBtn.style.display = "inline-block";
+    }
+
+    productModal.style.display = "flex";
+  }
+
+  function closeProductDetails() {
+    productModal.style.display = "none";
+  }
+
+  // Bind Edit product events
+  const editProdBtn = document.getElementById("btn-modal-edit-product");
+  const saveProdBtn = document.getElementById("btn-modal-save-product");
+
+  if (editProdBtn && saveProdBtn) {
+    editProdBtn.addEventListener("click", () => {
+      // Toggle inputs
+      document.getElementById("modal-sku").removeAttribute("readonly");
+      document.getElementById("modal-name").removeAttribute("readonly");
+      document.getElementById("modal-category").removeAttribute("disabled");
+      document.getElementById("modal-sales-price").removeAttribute("readonly");
+      document.getElementById("modal-cost-price").removeAttribute("readonly");
+      document.getElementById("modal-procure-strategy").removeAttribute("disabled");
+      document.getElementById("modal-procure-type").removeAttribute("disabled");
+      document.getElementById("modal-vendor").removeAttribute("readonly");
+
+      editProdBtn.style.display = "none";
+      saveProdBtn.style.display = "inline-block";
+    });
+
+    saveProdBtn.addEventListener("click", () => {
+      const pId = document.getElementById("modal-product-id").value;
+      const fd = new FormData();
+      fd.append('sku', document.getElementById("modal-sku").value);
+      fd.append('name', document.getElementById("modal-name").value);
+      fd.append('category', document.getElementById("modal-category").value);
+      fd.append('salesPrice', document.getElementById("modal-sales-price").value);
+      fd.append('costPrice', document.getElementById("modal-cost-price").value);
+      fd.append('procureStrategy', document.getElementById("modal-procure-strategy").value);
+      fd.append('procureType', document.getElementById("modal-procure-type").value);
+      fd.append('vendor', document.getElementById("modal-vendor").value);
+
+      fetch(`/products/edit/${pId}/`, { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            showToast(data.message, "success");
+            closeProductDetails();
+            setTimeout(() => window.location.reload(), 1000);
+          } else {
+            showToast(data.message, "error");
+          }
+        });
+    });
+  }
+
+  // Create New BOM button on Product Dialog
+  document.getElementById("btn-modal-create-bom").addEventListener("click", () => {
+    const pId = document.getElementById("modal-product-id").value;
+    closeProductDetails();
+    
+    // Switch to Form View
+    document.getElementById("bom-list-view").style.display = "none";
+    document.getElementById("bom-form-view").style.display = "block";
+
+    // Set product select
+    const bomProductSelect = document.getElementById("bom-product");
+    
+    // Check if product option is available (e.g. if it does not have a BOM already)
+    let optionExists = false;
+    Array.from(bomProductSelect.options).forEach(opt => {
+      if (opt.value == pId) optionExists = true;
+    });
+
+    if (!optionExists) {
+      // Add dynamic option if it's currently hidden/missing
+      const prod = productsData[pId];
+      if (prod) {
+        const opt = document.createElement("option");
+        opt.value = pId;
+        opt.innerText = `${prod.name} (${prod.sku})`;
+        bomProductSelect.appendChild(opt);
+      }
+    }
+    bomProductSelect.value = pId;
+    bomProductSelect.dispatchEvent(new Event("change"));
+  });
+
+  // ----------------------------------------------------
+  // Logs Modal logic
+  // ----------------------------------------------------
+  const logsModal = document.getElementById("bom-logs-modal");
+  function closeLogsModal() {
+    logsModal.style.display = "none";
+  }
+  document.getElementById("btn-bom-logs").addEventListener("click", () => {
+    logsModal.style.display = "flex";
+  });
+  document.getElementById("btn-bom-list-logs").addEventListener("click", () => {
+    logsModal.style.display = "flex";
+  });
+
+  // ----------------------------------------------------
+  // Inline Create BoM Form logic
+  // ----------------------------------------------------
   document.addEventListener("DOMContentLoaded", () => {
-    {% if permissions.can_edit_bom and not permissions.is_read_only %}
-      const modal = document.getElementById("bom-create-modal");
-      const compsContainer = document.getElementById("bom-components-container");
-      const opsContainer = document.getElementById("bom-operations-container");
+    const listView = document.getElementById("bom-list-view");
+    const formView = document.getElementById("bom-form-view");
+    
+    const compsTbody = document.getElementById("components-tbody");
+    const opsTbody = document.getElementById("operations-tbody");
 
-      const addComponentRow = () => {
-        const row = document.createElement("div");
-        row.className = "line-item-row";
-        row.style.gridTemplateColumns = "2fr 1fr 40px";
-        row.innerHTML = `
-          <select class="form-control comp-select" required>
+    // Toggle views
+    document.getElementById("btn-open-create-bom").addEventListener("click", () => {
+      // Reset form
+      document.getElementById("bom-create-form").reset();
+      compsTbody.innerHTML = "";
+      opsTbody.innerHTML = "";
+      addComponentRow();
+      addOperationRow();
+      
+      listView.style.display = "none";
+      formView.style.display = "block";
+    });
+
+    document.getElementById("btn-bom-back").addEventListener("click", () => {
+      formView.style.display = "none";
+      listView.style.display = "block";
+    });
+
+    // Update UOM label on finished product select
+    const finishedProductSelect = document.getElementById("bom-product");
+    const uomLabel = document.getElementById("bom-uom-label");
+    finishedProductSelect.addEventListener("change", () => {
+      const pId = finishedProductSelect.value;
+      const prod = productsData[pId];
+      if (prod && uomLabel) {
+        uomLabel.innerText = prod.uom;
+      }
+    });
+
+    // Add Component Row
+    const addComponentRow = () => {
+      const tr = document.createElement("tr");
+      tr.className = "component-row";
+      tr.style.fontSize = "13px";
+      tr.innerHTML = `
+        <td style="padding:8px 12px;">
+          <select class="form-control comp-select" style="padding: 6px;">
             <option value="" disabled selected>Select component...</option>
-            ${dbComponents.map(c => `<option value="${c.id}">${c.name} (${c.sku})</option>`).join('')}
+            ${dbComponents.map(c => `<option value="${c.id}" data-uom="${c.uom}">${c.name} (${c.sku})</option>`).join('')}
           </select>
-          <input type="number" class="form-control comp-qty" required min="1" value="1" style="text-align:right;">
-          <button type="button" class="line-remove-btn">✕</button>
-        `;
-        compsContainer.appendChild(row);
-        row.querySelector(".line-remove-btn").addEventListener("click", () => compsContainer.removeChild(row));
-      };
+        </td>
+        <td style="padding:8px 12px; text-align:center;">
+          <input type="number" class="form-control comp-qty" min="1" value="1" style="text-align:center; max-width:100px; margin:0 auto; padding: 6px;">
+        </td>
+        <td style="padding:8px 12px; color:var(--text-secondary);" class="comp-uom-td">Units</td>
+        <td style="text-align:center; padding:8px 12px;">
+          <button type="button" class="remove-btn remove-comp-btn">✕</button>
+        </td>
+      `;
+      compsTbody.appendChild(tr);
 
-      const addOperationRow = () => {
-        const row = document.createElement("div");
-        row.className = "line-item-row";
-        row.style.gridTemplateColumns = "1.5fr 1.5fr 1fr 40px";
-        row.innerHTML = `
-          <input type="text" class="form-control op-name" placeholder="Assembly, Painting..." required>
-          <select class="form-control op-wc" required>
-            <option value="Assembly Line">Assembly Line</option>
+      // UOM change listener
+      const select = tr.querySelector(".comp-select");
+      select.addEventListener("change", () => {
+        const opt = select.options[select.selectedIndex];
+        tr.querySelector(".comp-uom-td").innerText = opt.dataset.uom || "Units";
+      });
+
+      // Remove button
+      tr.querySelector(".remove-comp-btn").addEventListener("click", () => compsTbody.removeChild(tr));
+    };
+
+    // Add Operation Row
+    const addOperationRow = () => {
+      const tr = document.createElement("tr");
+      tr.className = "operation-row";
+      tr.style.fontSize = "13px";
+      tr.innerHTML = `
+        <td style="padding:8px 12px;">
+          <input type="text" class="form-control op-name" placeholder="Assembly, Sanding..." style="padding: 6px;">
+        </td>
+        <td style="padding:8px 12px;">
+          <select class="form-control op-wc" style="padding: 6px;">
+            <option value="Assembly Station">Assembly Station</option>
+            <option value="Sanding Station">Sanding Station</option>
             <option value="Painting Station">Painting Station</option>
             <option value="Packaging Unit">Packaging Unit</option>
           </select>
-          <input type="number" class="form-control op-dur" required min="1" value="30" style="text-align:right;">
-          <button type="button" class="line-remove-btn">✕</button>
-        `;
-        opsContainer.appendChild(row);
-        row.querySelector(".line-remove-btn").addEventListener("click", () => opsContainer.removeChild(row));
-      };
+        </td>
+        <td style="padding:8px 12px; text-align:center;">
+          <input type="number" class="form-control op-dur" min="1" value="30" style="text-align:center; max-width:100px; margin:0 auto; padding: 6px;">
+        </td>
+        <td style="text-align:center; padding:8px 12px;">
+          <button type="button" class="remove-btn remove-op-btn">✕</button>
+        </td>
+      `;
+      opsTbody.appendChild(tr);
 
-      document.getElementById("btn-open-create-bom-modal").addEventListener("click", () => {
-        compsContainer.innerHTML = '';
-        opsContainer.innerHTML = '';
-        addComponentRow();
-        addOperationRow();
-        modal.style.display = "flex";
-      });
+      // Remove button
+      tr.querySelector(".remove-op-btn").addEventListener("click", () => opsTbody.removeChild(tr));
+    };
 
-      document.getElementById("btn-add-bom-component").addEventListener("click", addComponentRow);
-      document.getElementById("btn-add-bom-operation").addEventListener("click", addOperationRow);
+    document.getElementById("btn-add-component-row").addEventListener("click", addComponentRow);
+    document.getElementById("btn-add-operation-row").addEventListener("click", addOperationRow);
 
-      const hideModal = () => modal.style.display = "none";
-      document.getElementById("close-bom-modal").addEventListener("click", hideModal);
-      document.getElementById("cancel-bom-modal").addEventListener("click", hideModal);
+    // Tab switcher logic
+    const tabCompsBtn = document.getElementById("tab-components-btn");
+    const tabOpsBtn = document.getElementById("tab-operations-btn");
+    const paneComps = document.getElementById("tab-components-pane");
+    const paneOps = document.getElementById("tab-operations-pane");
 
-      document.getElementById("bom-create-form").addEventListener("submit", (e) => {
-        e.preventDefault();
+    tabCompsBtn.addEventListener("click", () => {
+      tabCompsBtn.classList.add("active");
+      tabOpsBtn.classList.remove("active");
+      paneComps.style.display = "block";
+      paneOps.style.display = "none";
+    });
+
+    tabOpsBtn.addEventListener("click", () => {
+      tabOpsBtn.classList.add("active");
+      tabCompsBtn.classList.remove("active");
+      paneComps.style.display = "none";
+      paneOps.style.display = "block";
+    });
+
+    // Form submission
+    document.getElementById("btn-bom-save").addEventListener("click", (e) => {
+      const form = document.getElementById("bom-create-form");
+      
+      // 1. Validate Finished Product
+      const prodSelect = document.getElementById("bom-product");
+      if (!prodSelect.value) {
+        showToast("Please select a finished product.", "error");
+        prodSelect.focus();
+        return;
+      }
+
+      // 2. Validate Quantity Produced
+      const qtyProducedInput = document.getElementById("bom-qty");
+      const qtyProduced = parseFloat(qtyProducedInput.value) || 0;
+      if (qtyProduced <= 0) {
+        showToast("Quantity produced must be greater than 0.", "error");
+        qtyProducedInput.focus();
+        return;
+      }
+
+      // 3. Validate Components
+      const comps = [];
+      const compRows = document.querySelectorAll("#components-tbody .component-row");
+      if (compRows.length === 0) {
+        showToast("Please add at least one component.", "error");
+        return;
+      }
+
+      for (let i = 0; i < compRows.length; i++) {
+        const row = compRows[i];
+        const sel = row.querySelector(".comp-select");
+        const qtyVal = row.querySelector(".comp-qty").value;
+        const qty = parseFloat(qtyVal) || 0;
         
-        const comps = [];
-        document.querySelectorAll("#bom-components-container .line-item-row").forEach(row => {
-          const sel = row.querySelector(".comp-select");
-          const qty = parseInt(row.querySelector(".comp-qty").value) || 0;
-          if (sel.value && qty > 0) {
-            comps.push({ productId: sel.value, quantity: qty });
+        if (!sel.value) {
+          showToast("Please select a product for all components.", "error");
+          document.getElementById("tab-components-btn").click();
+          sel.focus();
+          return;
+        }
+        if (qty <= 0) {
+          showToast("Quantity to consume must be greater than 0.", "error");
+          document.getElementById("tab-components-btn").click();
+          row.querySelector(".comp-qty").focus();
+          return;
+        }
+        comps.push({ productId: sel.value, quantity: qty });
+      }
+
+      // 4. Validate Operations
+      const ops = [];
+      const opRows = document.querySelectorAll("#operations-tbody .operation-row");
+      for (let i = 0; i < opRows.length; i++) {
+        const row = opRows[i];
+        const nameInput = row.querySelector(".op-name");
+        const name = nameInput.value.trim();
+        const wcSelect = row.querySelector(".op-wc");
+        const wc = wcSelect.value;
+        const durVal = row.querySelector(".op-dur").value;
+        const dur = parseInt(durVal) || 0;
+
+        if (!name) {
+          showToast("Please enter an operation name or remove the empty operation line.", "error");
+          document.getElementById("tab-operations-btn").click();
+          nameInput.focus();
+          return;
+        }
+        if (dur <= 0) {
+          showToast("Expected duration must be greater than 0.", "error");
+          document.getElementById("tab-operations-btn").click();
+          row.querySelector(".op-dur").focus();
+          return;
+        }
+        ops.push({ name, workCenter: wc, duration: dur });
+      }
+
+      const fd = new FormData();
+      fd.append('productId', prodSelect.value);
+      fd.append('quantityProduced', qtyProducedInput.value);
+      fd.append('reference', document.getElementById("bom-ref").value.trim());
+      fd.append('components', JSON.stringify(comps));
+      fd.append('operations', JSON.stringify(ops));
+
+      fetch('/bom/create/', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            showToast(data.message, "success");
+            // Switch back to list view
+            formView.style.display = "none";
+            listView.style.display = "block";
+            setTimeout(() => window.location.reload(), 1000);
+          } else {
+            showToast(data.message, "error");
           }
         });
-
-        const ops = [];
-        document.querySelectorAll("#bom-operations-container .line-item-row").forEach(row => {
-          const name = row.querySelector(".op-name").value;
-          const wc = row.querySelector(".op-wc").value;
-          const dur = parseInt(row.querySelector(".op-dur").value) || 0;
-          if (name && dur > 0) {
-            ops.push({ name, workCenter: wc, duration: dur });
-          }
-        });
-
-        const fd = new FormData();
-        fd.append('productId', document.getElementById("bom-product").value);
-        fd.append('components', JSON.stringify(comps));
-        fd.append('operations', JSON.stringify(ops));
-
-        fetch('/bom/create/', { method: 'POST', body: fd })
-          .then(res => res.json())
-          .then(data => {
-            if (data.status === 'success') {
-              showToast(data.message, "success");
-              hideModal();
-              setTimeout(() => window.location.reload(), 1000);
-            } else {
-              showToast(data.message, "error");
-            }
-          });
-      });
-    {% endif %}
+    });
   });
 </script>
 {% endblock %}

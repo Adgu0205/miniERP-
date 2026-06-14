@@ -35,6 +35,7 @@ urlpatterns = [
     path('purchases/<int:po_id>/confirm/', purchases.views.confirm_purchase_order, name='confirm_purchase_order'),
     path('purchases/<int:po_id>/receive/', purchases.views.receive_purchase_order, name='receive_purchase_order'),
     path('purchases/<int:po_id>/cancel/', purchases.views.cancel_purchase_order, name='cancel_purchase_order'),
+    path('purchases/<int:po_id>/edit/', purchases.views.edit_purchase_order, name='edit_purchase_order'),
     
     # Manufacturing
     path('manufacturing/', manufacturing.views.manufacturing_cockpit, name='manufacturing_cockpit'),
@@ -42,6 +43,8 @@ urlpatterns = [
     path('manufacturing/<int:mo_id>/confirm/', manufacturing.views.confirm_mo, name='confirm_mo'),
     path('manufacturing/<int:mo_id>/complete/', manufacturing.views.complete_mo, name='complete_mo'),
     path('manufacturing/<int:mo_id>/cancel/', manufacturing.views.cancel_mo, name='cancel_mo'),
+    path('manufacturing/<int:mo_id>/edit/', manufacturing.views.edit_mo, name='edit_mo'),
+    path('manufacturing/<int:mo_id>/start/', manufacturing.views.start_mo, name='start_mo'),
     
     # Work Orders
     path('manufacturing/workorder/<int:wo_id>/start/', manufacturing.views.start_work_order, name='start_work_order'),

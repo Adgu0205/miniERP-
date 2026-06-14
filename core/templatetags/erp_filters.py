@@ -46,3 +46,13 @@ def to_json(value):
         return json.dumps(value)
     except (ValueError, TypeError):
         return '{}'
+
+
+@register.filter
+def divide(value, arg):
+    """Divide value by arg."""
+    try:
+        return float(value) / float(arg)
+    except (ValueError, TypeError, ZeroDivisionError):
+        return 0
+
