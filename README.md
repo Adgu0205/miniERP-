@@ -7,7 +7,7 @@ Sales, Purchase, Manufacturing, BoM, Inventory & a real-time Stock Ledger, autom
 > Sales decrease stock · Purchase increases stock · Manufacturing consumes + produces · Procurement replenishes.
 
 ## Quick start (offline, zero external services)
-```bash
+```bash .
 python -m venv .venv
 # Windows
 .venv\Scripts\activate
