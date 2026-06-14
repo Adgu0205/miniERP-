@@ -1,4 +1,4 @@
-# ProcurERP — Mini ERP: From Demand to Delivery
+# ProcurERP — Mini ERP: From Demand to Delivery .
 
 An Odoo-inspired, **inventory-driven** Mini ERP for a furniture manufacturer ("Shiv Furniture Works").
 Sales, Purchase, Manufacturing, BoM, Inventory & a real-time Stock Ledger, automated procurement (MTS/MTO), audit logs, and an executive dashboard — all connected as one system.
