@@ -35,21 +35,31 @@ def dashboard(request):
 
     # ── KPI: Gross Revenue ─────────────────────────────────────────────────
     total_sales_val = sales_orders.aggregate(total=Sum('total_amount'))['total'] or 0.00
+    confirmed_so_count = sales_orders.exclude(status='draft').count()
 
     # ── KPI: Pending Deliveries ────────────────────────────────────────────
     pending_deliveries = sales_orders.filter(status__in=['confirmed', 'partially_delivered']).count()
+    confirmed_so_count_pend = sales_orders.filter(status='confirmed').count()
+    partially_delivered_count = sales_orders.filter(status='partially_delivered').count()
 
     # ── KPI: Active Productions ────────────────────────────────────────────
     active_mfg_orders = mfg_orders.filter(status__in=['confirmed', 'in_progress', 'quality_check']).count()
+    total_mos = mfg_orders.count()
+    completed_mos = mfg_orders.filter(status='completed').count()
 
     # ── KPI: Inventory Valuation ───────────────────────────────────────────
+    total_products_count = products.count()
     total_inventory_value = sum(p.on_hand * p.cost_price for p in products)
 
     # ── KPI: Shortages ─────────────────────────────────────────────────────
     shortage_items = sum(1 for p in products if p.free_to_use < p.reorder_threshold)
+    safe_stock_count = products.count() - shortage_items
 
     # ── KPI: Active Procurement ────────────────────────────────────────────
+    total_pos_count = purchase_orders.count()
     active_purchase_orders = purchase_orders.filter(status__in=['confirmed', 'partially_received']).count()
+    confirmed_pos_count = purchase_orders.filter(status='confirmed').count()
+    partially_received_pos = purchase_orders.filter(status='partially_received').count()
 
     # ── P2: Delayed Orders (real calculation) ──────────────────────────────
     today = date.today()
@@ -64,8 +74,6 @@ def dashboard(request):
     fulfillment_rate = round((fully_delivered / total_non_cancelled * 100), 1) if total_non_cancelled > 0 else 0.0
 
     # ── P2: Manufacturing Efficiency ───────────────────────────────────────
-    total_mos = mfg_orders.count()
-    completed_mos = mfg_orders.filter(status='completed').count()
     mfg_efficiency = round((completed_mos / total_mos * 100), 1) if total_mos > 0 else 0.0
 
     # ── P2: Monthly Revenue Trend (last 12 months, real data) ─────────────
@@ -185,13 +193,25 @@ def dashboard(request):
         'role': role,
         'user_info': user_info,
         'total_sales_val': float(total_sales_val),
+        'confirmed_so_count': confirmed_so_count,
         'pending_deliveries': pending_deliveries,
+        'confirmed_so_count_pend': confirmed_so_count_pend,
+        'partially_delivered_count': partially_delivered_count,
         'active_mfg_orders': active_mfg_orders,
+        'total_mos': total_mos,
+        'completed_mos': completed_mos,
         'total_inventory_value': float(total_inventory_value),
+        'total_products_count': total_products_count,
         'shortage_items': shortage_items,
+        'safe_stock_count': safe_stock_count,
         'active_purchase_orders': active_purchase_orders,
+        'total_pos_count': total_pos_count,
+        'confirmed_pos_count': confirmed_pos_count,
+        'partially_received_pos': partially_received_pos,
         'delayed_orders': delayed_orders,
         'fulfillment_rate': fulfillment_rate,
+        'fully_delivered': fully_delivered,
+        'total_non_cancelled': total_non_cancelled,
         'mfg_efficiency': mfg_efficiency,
         'recent_activities': recent_activities,
         'notifications_list': notifications_list,

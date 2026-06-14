@@ -2,12 +2,12 @@ from audit.models import AuditLog, Notification
 from products.models import Product
 
 ROLE_ACCESS_MAP = {
-    'admin': ["dashboard", "products_list", "sales_pipeline", "purchase_list", "manufacturing_cockpit", "bom_list", "audit_logs"],
+    'admin': ["dashboard", "products_list", "sales_pipeline", "purchase_list", "manufacturing_cockpit", "bom_list", "audit_logs", "stock_ledger", "inventory_valuation", "inventory_movements"],
     'sales_user': ["dashboard", "products_list", "sales_pipeline"],
     'purchase_user': ["dashboard", "products_list", "purchase_list"],
     'manufacturing_user': ["dashboard", "manufacturing_cockpit", "bom_list"],
-    'inventory_manager': ["dashboard", "products_list"],
-    'business_owner': ["dashboard", "products_list", "sales_pipeline", "purchase_list", "manufacturing_cockpit", "bom_list"]
+    'inventory_manager': ["dashboard", "products_list", "inventory_valuation", "inventory_movements", "stock_ledger"],
+    'business_owner': ["dashboard", "products_list", "sales_pipeline", "purchase_list", "manufacturing_cockpit", "bom_list", "stock_ledger", "inventory_valuation", "inventory_movements"]
 }
 
 ROLE_INFO_MAP = {

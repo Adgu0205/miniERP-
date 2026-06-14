@@ -6,106 +6,163 @@
 {% block content %}
 <!-- Top KPI Grid -->
 <div class="dashboard-grid">
-  <div class="kpi-card">
+
+  <!-- Tile 1: Gross Revenue -->
+  <div class="kpi-card" style="position:relative; overflow:hidden;">
     <div class="kpi-header">
-      <span>Gross Revenue</span>
+      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Gross Revenue</span>
       <div class="kpi-icon-container green-accent">
         <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:16px; height:16px;">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
       </div>
     </div>
-    <div class="kpi-val">₹{{ total_sales_val|floatformat:2 }}</div>
-    <div class="kpi-trend positive">
-      <span>↑ All Active Orders</span>
+    <div class="kpi-val" style="margin:6px 0 4px;">₹{{ total_sales_val|floatformat:2 }}</div>
+    <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px; line-height:1.5;">
+      Total value of <strong style="color:var(--text-primary);">{{ confirmed_so_count }}</strong> confirmed sales order{{ confirmed_so_count|pluralize }},
+      excluding cancelled orders
     </div>
+    <div class="kpi-trend positive">
+      <span>↑ From active sales orders</span>
+    </div>
+    <a href="{% url 'sales_pipeline' %}" style="position:absolute; inset:0; z-index:1;" title="View Sales Orders"></a>
   </div>
 
-  <div class="kpi-card">
+  <!-- Tile 2: Pending Deliveries -->
+  <div class="kpi-card" style="position:relative; overflow:hidden;">
     <div class="kpi-header">
-      <span>Pending Deliveries</span>
-      <div class="kpi-icon-container">
+      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Pending Deliveries</span>
+      <div class="kpi-icon-container {% if pending_deliveries > 2 %}{% else %}green-accent{% endif %}">
         <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:16px; height:16px;">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12h12L19 8M10 12h4"></path>
         </svg>
       </div>
     </div>
-    <div class="kpi-val">{{ pending_deliveries }} Orders</div>
-    <div class="kpi-trend {% if pending_deliveries > 2 %}negative{% else %}positive{% endif %}">
-      <span>{% if pending_deliveries > 2 %}⚠️ High Queue{% else %}✓ Normal{% endif %}</span>
+    <div class="kpi-val" style="margin:6px 0 4px; {% if pending_deliveries > 2 %}color:#f59e0b;{% endif %}">{{ pending_deliveries }} Order{{ pending_deliveries|pluralize }}</div>
+    <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px; line-height:1.5;">
+      <strong style="color:var(--text-primary);">{{ confirmed_so_count_pend }}</strong> awaiting dispatch &middot;
+      <strong style="color:var(--text-primary);">{{ partially_delivered_count }}</strong> partially shipped
     </div>
+    <div class="kpi-trend {% if pending_deliveries > 2 %}negative{% else %}positive{% endif %}">
+      <span>{% if pending_deliveries > 2 %}⚠ High Queue — action needed{% else %}✓ Queue within normal range{% endif %}</span>
+    </div>
+    <a href="{% url 'sales_pipeline' %}" style="position:absolute; inset:0; z-index:1;" title="View Sales Orders"></a>
   </div>
 
-  <div class="kpi-card">
+  <!-- Tile 3: Active Production -->
+  <div class="kpi-card" style="position:relative; overflow:hidden;">
     <div class="kpi-header">
-      <span>Active Production</span>
+      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Active Production</span>
       <div class="kpi-icon-container">
         <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:16px; height:16px;">
           <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
         </svg>
       </div>
     </div>
-    <div class="kpi-val">{{ active_mfg_orders }} MOs</div>
-    <div class="kpi-trend positive">
-      <span>{{ mfg_efficiency }}% completion rate</span>
+    <div class="kpi-val" style="margin:6px 0 4px;">{{ active_mfg_orders }} MO{{ active_mfg_orders|pluralize }}</div>
+    <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px; line-height:1.5;">
+      <strong style="color:var(--text-primary);">{{ completed_mos }}</strong> of <strong style="color:var(--text-primary);">{{ total_mos }}</strong> total orders completed
+      ({{ mfg_efficiency }}% completion rate)
     </div>
+    <div class="kpi-trend {% if mfg_efficiency >= 75 %}positive{% else %}negative{% endif %}">
+      <span>{% if mfg_efficiency >= 75 %}✓ On track{% else %}⚠ Below 75% benchmark{% endif %}</span>
+    </div>
+    <a href="{% url 'manufacturing_cockpit' %}" style="position:absolute; inset:0; z-index:1;" title="View Manufacturing Orders"></a>
   </div>
 
-  <div class="kpi-card">
+  <!-- Tile 4: Inventory Value -->
+  <div class="kpi-card" style="position:relative; overflow:hidden;">
     <div class="kpi-header">
-      <span>Inventory Value</span>
+      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Inventory Value</span>
       <div class="kpi-icon-container green-accent">
         <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:16px; height:16px;">
           <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
         </svg>
       </div>
     </div>
-    <div class="kpi-val">₹{{ total_inventory_value|floatformat:2 }}</div>
-    <div class="kpi-trend positive">
-      <span>Active catalog lines</span>
+    <div class="kpi-val" style="margin:6px 0 4px;">₹{{ total_inventory_value|floatformat:2 }}</div>
+    <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px; line-height:1.5;">
+      Across <strong style="color:var(--text-primary);">{{ total_products_count }}</strong> product{{ total_products_count|pluralize }} in catalog
+      (on‑hand qty × cost price)
     </div>
+    <div class="kpi-trend positive">
+      <span>Total stockholding cost</span>
+    </div>
+    <a href="{% url 'products_list' %}" style="position:absolute; inset:0; z-index:1;" title="View Products"></a>
   </div>
+
 </div>
 
 <!-- Secondary KPI Row -->
 <div class="dashboard-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
-  <div class="kpi-card" style="min-height: 100px; padding: 16px 20px;">
-    <div class="kpi-header">
-      <span>Stock Shortages</span>
+
+  <!-- Tile 5: Stock Shortages -->
+  <div class="kpi-card" style="min-height:110px; padding:16px 20px; position:relative; overflow:hidden;">
+    <div class="kpi-header" style="margin-bottom:6px;">
+      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Stock Shortages</span>
     </div>
-    <div style="display:flex; align-items:baseline; gap:8px;">
-      <div class="kpi-val" style="font-size: 24px; margin-top:4px; color:{% if shortage_items > 0 %}#ef4444{% else %}var(--text-primary){% endif %};">{{ shortage_items }}</div>
-      <span style="font-size:12px; color:var(--text-muted);">products low</span>
+    <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
+      <div class="kpi-val" style="font-size: 26px; margin-top:0; color:{% if shortage_items > 0 %}#ef4444{% else %}var(--accent-hover){% endif %};">{{ shortage_items }}</div>
+      <span style="font-size:12px; color:var(--text-muted);">product{{ shortage_items|pluralize }} below reorder threshold</span>
     </div>
+    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">
+      <strong style="color:{% if safe_stock_count == total_products_count %}var(--accent-hover){% else %}var(--text-primary){% endif %};">{{ safe_stock_count }}</strong>
+      of {{ total_products_count }} products at safe levels
+    </div>
+    <a href="{% url 'products_list' %}" style="position:absolute; inset:0; z-index:1;" title="View Products"></a>
   </div>
-  <div class="kpi-card" style="min-height: 100px; padding: 16px 20px;">
-    <div class="kpi-header">
-      <span>Replenishment Queue</span>
+
+  <!-- Tile 6: Replenishment Queue (Active POs) -->
+  <div class="kpi-card" style="min-height:110px; padding:16px 20px; position:relative; overflow:hidden;">
+    <div class="kpi-header" style="margin-bottom:6px;">
+      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Replenishment Queue</span>
     </div>
-    <div style="display:flex; align-items:baseline; gap:8px;">
-      <div class="kpi-val" style="font-size: 24px; margin-top:4px;">{{ active_purchase_orders }} POs</div>
-      <span style="font-size:12px; color:var(--text-muted);">in transit</span>
+    <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
+      <div class="kpi-val" style="font-size: 26px; margin-top:0;">{{ active_purchase_orders }} PO{{ active_purchase_orders|pluralize }}</div>
+      <span style="font-size:12px; color:var(--text-muted);">in transit from vendors</span>
     </div>
+    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">
+      <strong style="color:var(--text-primary);">{{ confirmed_pos_count }}</strong> confirmed &middot;
+      <strong style="color:var(--text-primary);">{{ partially_received_pos }}</strong> partially received
+    </div>
+    <a href="{% url 'purchase_list' %}" style="position:absolute; inset:0; z-index:1;" title="View Purchase Orders"></a>
   </div>
-  <div class="kpi-card" style="min-height: 100px; padding: 16px 20px;">
-    <div class="kpi-header">
-      <span>Delayed Orders</span>
+
+  <!-- Tile 7: Delayed Orders -->
+  <div class="kpi-card" style="min-height:110px; padding:16px 20px; position:relative; overflow:hidden;">
+    <div class="kpi-header" style="margin-bottom:6px;">
+      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Delayed Orders</span>
     </div>
-    <div style="display:flex; align-items:baseline; gap:8px;">
-      <div class="kpi-val" style="font-size: 24px; margin-top:4px; color:{% if delayed_orders > 0 %}#ef4444{% else %}var(--text-primary){% endif %};">{{ delayed_orders }}</div>
-      <span style="font-size:12px; color:var(--text-muted);">overdue</span>
+    <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
+      <div class="kpi-val" style="font-size: 26px; margin-top:0; color:{% if delayed_orders > 0 %}#ef4444{% else %}var(--accent-hover){% endif %};">{{ delayed_orders }}</div>
+      <span style="font-size:12px; color:var(--text-muted);">{% if delayed_orders > 0 %}order{{ delayed_orders|pluralize }} past expected date{% else %}no overdue orders{% endif %}</span>
     </div>
+    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">
+      {% if delayed_orders > 0 %}
+        Orders past their expected delivery date and still open
+      {% else %}
+        ✓ All orders are on or ahead of schedule
+      {% endif %}
+    </div>
+    <a href="{% url 'sales_pipeline' %}" style="position:absolute; inset:0; z-index:1;" title="View Sales Orders"></a>
   </div>
-  <div class="kpi-card" style="min-height: 100px; padding: 16px 20px;">
-    <div class="kpi-header">
-      <span>Fulfilment Rate</span>
+
+  <!-- Tile 8: Fulfilment Rate -->
+  <div class="kpi-card" style="min-height:110px; padding:16px 20px; position:relative; overflow:hidden;">
+    <div class="kpi-header" style="margin-bottom:6px;">
+      <span style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Fulfilment Rate</span>
     </div>
-    <div style="display:flex; align-items:baseline; gap:8px;">
-      <div class="kpi-val" style="font-size: 24px; margin-top:4px; color:{% if fulfillment_rate >= 80 %}var(--accent-hover){% else %}#ef4444{% endif %};">{{ fulfillment_rate }}%</div>
-      <span style="font-size:12px; color:var(--text-muted);">delivered</span>
+    <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:4px;">
+      <div class="kpi-val" style="font-size: 26px; margin-top:0; color:{% if fulfillment_rate >= 80 %}var(--accent-hover){% else %}#ef4444{% endif %};">{{ fulfillment_rate }}%</div>
+      <span style="font-size:12px; color:var(--text-muted);">of orders fully delivered</span>
     </div>
+    <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">
+      <strong style="color:var(--text-primary);">{{ fully_delivered }}</strong> fully delivered
+      of <strong style="color:var(--text-primary);">{{ total_non_cancelled }}</strong> active order{{ total_non_cancelled|pluralize }}
+    </div>
+    <a href="{% url 'sales_pipeline' %}" style="position:absolute; inset:0; z-index:1;" title="View Sales Orders"></a>
   </div>
+
 </div>
 
 <!-- Charts Section -->

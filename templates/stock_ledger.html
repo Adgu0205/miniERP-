@@ -4,6 +4,15 @@
 {% block heading %}Stock Valuation Ledger{% endblock %}
 
 {% block content %}
+<!-- Back to Dashboard -->
+<div style="margin-bottom:20px;">
+  <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px;">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    </svg>
+    Back to Dashboard
+  </a>
+</div>
 <!-- Filter Panel -->
 <div class="card-panel" style="margin-bottom:20px;">
   <form method="GET" action="{% url 'stock_ledger' %}" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
