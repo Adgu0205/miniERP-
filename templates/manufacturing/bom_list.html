@@ -1,19 +1,25 @@
 {% extends "base.html" %}
 {% block breadcrumb %}Bill of Materials{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">Bill of Materials</h1>
-  <a href="{% url 'manufacturing:bom_new' %}" class="rounded-md bg-violet-600 text-white text-sm px-4 py-2">+ New BoM</a>
+<div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+  <div>
+    <h1 class="page-title">Bill of Materials</h1>
+    <p class="page-sub">{{ boms|length }} BoM(s) · components + operations per product</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'manufacturing:list' %}" class="btn btn-soft">← Manufacturing</a>
+    <a href="{% url 'manufacturing:bom_new' %}" class="btn btn-primary">+ New BoM</a>
+  </div>
 </div>
 <div class="card overflow-x-auto"><table class="erp">
-  <thead><tr><th>Product</th><th>Name</th><th class="text-right">Output Qty</th><th class="text-right">Components</th><th class="text-right">Cost ₹</th><th>Active</th></tr></thead>
-  <tbody>{% for b in boms %}<tr>
-    <td><a href="{% url 'manufacturing:bom_detail' b.pk %}" class="text-violet-600 hover:underline font-medium">{{ b.product.name }}</a></td>
+  <thead><tr><th>Product</th><th>Name</th><th class="text-right">Output Qty</th><th class="text-right">Components</th><th class="text-right">Cost ₹</th><th class="text-center">Active</th></tr></thead>
+  <tbody>{% for b in boms %}<tr class="linkrow" onclick="location.href='{% url 'manufacturing:bom_detail' b.pk %}'">
+    <td><span class="font-medium">{{ b.product.name }}</span></td>
     <td>{{ b.name|default:"—" }}</td>
     <td class="text-right">{{ b.quantity }}</td>
     <td class="text-right">{{ b.lines.count }}</td>
-    <td class="text-right">{{ b.component_cost }}</td>
-    <td>{% if b.is_active %}✅{% else %}—{% endif %}</td>
-  </tr>{% empty %}<tr><td colspan="6" class="text-center text-slate-500 py-8">No BoMs.</td></tr>{% endfor %}</tbody>
+    <td class="text-right">{{ b.component_cost|floatformat:2 }}</td>
+    <td class="text-center">{% if b.is_active %}<span class="chip bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300">Active</span>{% else %}<span class="chip bg-slate-100 text-slate-500 dark:bg-slate-800">Inactive</span>{% endif %}</td>
+  </tr>{% empty %}<tr><td colspan="6" class="text-center text-slate-500 py-10">No BoMs yet.</td></tr>{% endfor %}</tbody>
 </table></div>
 {% endblock %}

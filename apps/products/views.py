@@ -14,8 +14,17 @@ from .models import Product
 def product_list(request):
     qs = Product.objects.all()
     q = request.GET.get("q", "").strip()
+    f = request.GET.get("f", "")  # quick filter
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(sku__icontains=q))
+    if f == "mts":
+        qs = qs.filter(strategy="mts")
+    elif f == "mto":
+        qs = qs.filter(strategy="mto")
+    elif f == "buy":
+        qs = qs.filter(procurement_type="buy")
+    elif f == "manufacture":
+        qs = qs.filter(procurement_type="manufacture")
     if request.GET.get("export") == "csv":
         from config.utils import csv_response
         return csv_response("products.csv",
@@ -24,7 +33,11 @@ def product_list(request):
             [(p.name, p.sku, p.get_product_type_display(), p.get_strategy_display(),
               p.get_procurement_type_display(), p.on_hand, p.reserved,
               p.free_to_use, p.cost_price, p.sale_price) for p in qs])
-    return render(request, "products/list.html", {"products": qs, "q": q})
+    products = list(qs)
+    if f == "low":  # low/out of free stock (property — filter in Python)
+        products = [p for p in products if p.free_to_use <= 0]
+    return render(request, "products/list.html",
+                  {"products": products, "q": q, "f": f})
 
 
 @module_required("products")

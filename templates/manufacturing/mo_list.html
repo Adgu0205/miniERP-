@@ -2,13 +2,18 @@
 {% load erp_extras %}
 {% block breadcrumb %}Manufacturing Orders{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">Manufacturing Orders</h1>
+<div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+  <div>
+    <h1 class="page-title">Manufacturing Orders</h1>
+    <p class="page-sub">{{ orders|length }} order(s) · reserve → consume → produce</p>
+  </div>
   <div class="flex gap-2">
-    <a href="{% url 'manufacturing:bom_list' %}" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">BoMs</a>
-    <a href="?view=list" class="text-sm px-3 py-2 rounded-md {% if view != 'kanban' %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">List</a>
-    <a href="?view=kanban" class="text-sm px-3 py-2 rounded-md {% if view == 'kanban' %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">Kanban</a>
-    <a href="{% url 'manufacturing:new' %}" class="rounded-md bg-violet-600 text-white text-sm px-4 py-2">+ New</a>
+    <a href="{% url 'manufacturing:bom_list' %}" class="btn btn-soft">BoMs</a>
+    <div class="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5">
+      <a href="?view=list" class="btn {% if view != 'kanban' %}btn-primary{% else %}btn-soft{% endif %} py-1.5">List</a>
+      <a href="?view=kanban" class="btn {% if view == 'kanban' %}btn-primary{% else %}btn-soft{% endif %} py-1.5">Kanban</a>
+    </div>
+    <a href="{% url 'manufacturing:new' %}" class="btn btn-primary">+ New Order</a>
   </div>
 </div>
 
@@ -21,7 +26,7 @@
     <div class="flex items-center justify-between text-xs font-semibold text-slate-500 px-2 py-1">
       <span class="flex items-center gap-1.5">
         <span class="h-2 w-2 rounded-full
-          {% if code == 'draft' %}bg-slate-400{% elif code == 'confirmed' %}bg-sky-500{% elif code == 'in_progress' %}bg-amber-500{% elif code == 'done' %}bg-emerald-500{% else %}bg-rose-500{% endif %}"></span>
+          {% if code == 'draft' %}bg-slate-400{% elif code == 'confirmed' %}bg-slate-500{% elif code == 'in_progress' %}bg-slate-500{% elif code == 'done' %}bg-slate-500{% else %}bg-rose-500{% endif %}"></span>
         {{ label }}</span>
       <span class="opacity-60">{{ columns|get_item:code|length }}</span>
     </div>
@@ -29,11 +34,11 @@
       {% for mo in columns|get_item:code %}
       <div class="card p-3 hover:shadow cursor-grab active:cursor-grabbing kcard" draggable="true" data-pk="{{ mo.pk }}">
         <div class="flex justify-between items-center">
-          <a href="{% url 'manufacturing:detail' mo.pk %}" class="font-medium text-sm text-violet-600 hover:underline">{{ mo.reference }}</a>
+          <a href="{% url 'manufacturing:detail' mo.pk %}" class="font-medium text-sm text-slate-600 hover:underline">{{ mo.reference }}</a>
           {% if mo.is_delayed %}<span class="text-xs text-rose-500">⚠</span>{% endif %}
         </div>
         <div class="text-xs text-slate-500 truncate">{{ mo.quantity }} × {{ mo.product.name }}</div>
-        {% if mo.origin %}<div class="text-[10px] text-fuchsia-500 mt-0.5">{{ mo.origin }}</div>{% endif %}
+        {% if mo.origin %}<div class="text-[10px] text-slate-500 mt-0.5">{{ mo.origin }}</div>{% endif %}
       </div>
       {% endfor %}
     </div>
@@ -50,10 +55,10 @@
     c.addEventListener('dragend',()=>{c.style.opacity=1;});
   });
   board.querySelectorAll('.kcol').forEach(col=>{
-    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('ring-2','ring-violet-400');});
-    col.addEventListener('dragleave',()=>col.classList.remove('ring-2','ring-violet-400'));
+    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('ring-2','ring-slate-400');});
+    col.addEventListener('dragleave',()=>col.classList.remove('ring-2','ring-slate-400'));
     col.addEventListener('drop',e=>{
-      e.preventDefault();col.classList.remove('ring-2','ring-violet-400');
+      e.preventDefault();col.classList.remove('ring-2','ring-slate-400');
       if(!dragged)return;
       const pk=dragged.dataset.pk, action=map[col.dataset.status];
       if(action){ window.location=`${base}/${pk}/${action}/`; }
@@ -62,17 +67,27 @@
 })();
 </script>
 {% else %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+  <div class="flex flex-wrap gap-1.5">
+    <a href="?" class="fbtn {% if not sel_status %}on{% endif %}">All</a>
+    {% for code, label in statuses %}<a href="?status={{ code }}" class="fbtn {% if sel_status == code %}on{% endif %}">{{ label }}</a>{% endfor %}
+  </div>
+  <form class="relative">
+    <svg class="h-4 w-4 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-4.3-4.3M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+    <input name="q" value="{{ q }}" placeholder="Search reference or product…" class="inp pl-9 w-64">
+  </form>
+</div>
 <div class="card overflow-x-auto"><table class="erp">
   <thead><tr><th>Reference</th><th>Product</th><th class="text-right">Qty</th><th>Assignee</th><th>Deadline</th><th>Origin</th><th>Status</th></tr></thead>
-  <tbody>{% for mo in orders %}<tr>
-    <td><a href="{% url 'manufacturing:detail' mo.pk %}" class="text-violet-600 hover:underline font-medium">{{ mo.reference }}</a></td>
+  <tbody>{% for mo in orders %}<tr class="linkrow" onclick="location.href='{% url 'manufacturing:detail' mo.pk %}'">
+    <td><span class="font-medium">{{ mo.reference }}</span></td>
     <td>{{ mo.product.name }}</td>
     <td class="text-right">{{ mo.quantity }}</td>
     <td>{{ mo.assignee.username|default:"—" }}</td>
     <td class="{% if mo.is_delayed %}text-rose-500 font-medium{% endif %}">{{ mo.deadline|default:"—" }}</td>
-    <td class="text-xs text-slate-500">{{ mo.origin }}</td>
+    <td class="text-xs text-slate-500">{{ mo.origin|default:"—" }}</td>
     <td>{% include "partials/badge.html" with status=mo.status label=mo.get_status_display %}</td>
-  </tr>{% empty %}<tr><td colspan="7" class="text-center text-slate-500 py-8">No manufacturing orders.</td></tr>{% endfor %}</tbody>
+  </tr>{% empty %}<tr><td colspan="7" class="text-center text-slate-500 py-10">No manufacturing orders yet.</td></tr>{% endfor %}</tbody>
 </table></div>
 {% endif %}
 {% endblock %}

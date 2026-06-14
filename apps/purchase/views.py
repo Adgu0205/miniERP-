@@ -12,18 +12,28 @@ from .models import POStatus, PurchaseOrder, Vendor
 
 @module_required("purchase")
 def po_list(request):
+    from django.db.models import Q
     qs = PurchaseOrder.objects.select_related("vendor").prefetch_related("lines").all()
     status = request.GET.get("status")
+    q = request.GET.get("q", "").strip()
     if status:
         qs = qs.filter(status=status)
+    if q:
+        qs = qs.filter(Q(reference__icontains=q) | Q(vendor__name__icontains=q))
     if request.GET.get("export") == "csv":
         from config.utils import csv_response
         return csv_response("purchase_orders.csv",
             ["Reference", "Vendor", "Origin", "Date", "Total", "Status"],
             [(o.reference, o.vendor.name if o.vendor else "", o.origin,
               o.order_date, o.total, o.get_status_display()) for o in qs])
+    view = request.GET.get("view", "list")
+    columns = {s: [] for s, _ in POStatus.choices}
+    if view == "kanban":
+        for po in qs:
+            columns.setdefault(po.status, []).append(po)
     return render(request, "purchase/list.html", {
-        "orders": qs, "statuses": POStatus.choices, "sel_status": status or ""})
+        "orders": qs, "statuses": POStatus.choices, "sel_status": status or "",
+        "view": view, "columns": columns, "q": q})
 
 
 @module_required("purchase")
@@ -45,10 +55,15 @@ def po_form(request, pk=None):
 
 @module_required("purchase")
 def po_detail(request, pk):
+    from config.utils import pipeline
     po = get_object_or_404(
         PurchaseOrder.objects.select_related("vendor"), pk=pk)
+    steps, cancelled = pipeline(po.status, [
+        ("draft", "Draft"), ("confirmed", "Confirmed"),
+        ("partial", "Partially Received"), ("received", "Fully Received")])
     return render(request, "purchase/detail.html",
-                  {"po": po, "lines": po.lines.select_related("product")})
+                  {"po": po, "lines": po.lines.select_related("product"),
+                   "steps": steps, "cancelled": cancelled})
 
 
 @module_required("purchase")

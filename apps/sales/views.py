@@ -12,10 +12,14 @@ from .models import Customer, SalesOrder, SOStatus
 
 @module_required("sales")
 def so_list(request):
+    from django.db.models import Q
     qs = SalesOrder.objects.select_related("customer").prefetch_related("lines").all()
     status = request.GET.get("status")
+    q = request.GET.get("q", "").strip()
     if status:
         qs = qs.filter(status=status)
+    if q:
+        qs = qs.filter(Q(reference__icontains=q) | Q(customer__name__icontains=q))
     if request.GET.get("export") == "csv":
         from config.utils import csv_response
         return csv_response("sales_orders.csv",
@@ -29,7 +33,7 @@ def so_list(request):
             columns.setdefault(so.status, []).append(so)
     return render(request, "sales/list.html", {
         "orders": qs, "statuses": SOStatus.choices, "sel_status": status or "",
-        "view": view, "columns": columns,
+        "view": view, "columns": columns, "q": q,
     })
 
 
@@ -52,9 +56,14 @@ def so_form(request, pk=None):
 
 @module_required("sales")
 def so_detail(request, pk):
+    from config.utils import pipeline
     so = get_object_or_404(SalesOrder.objects.select_related("customer"), pk=pk)
+    steps, cancelled = pipeline(so.status, [
+        ("draft", "Draft"), ("confirmed", "Confirmed"),
+        ("partial", "Partially Delivered"), ("delivered", "Fully Delivered")])
     return render(request, "sales/detail.html", {
-        "so": so, "availability": services.availability(so)})
+        "so": so, "availability": services.availability(so),
+        "steps": steps, "cancelled": cancelled})
 
 
 @module_required("sales")

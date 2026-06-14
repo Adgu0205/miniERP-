@@ -1,14 +1,30 @@
 {% extends "base.html" %}
 {% block breadcrumb %}Products{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">Products</h1>
+<div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+  <div>
+    <h1 class="page-title">Products</h1>
+    <p class="page-sub">{{ products|length }} product(s) · the central inventory model</p>
+  </div>
   <div class="flex gap-2">
-  <a href="?q={{ q }}&export=csv" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">⬇ CSV</a>
-  <a href="{% url 'products:new' %}" class="rounded-md bg-violet-600 hover:bg-violet-700 text-white text-sm px-4 py-2">+ New Product</a>
+    <a href="?q={{ q }}&export=csv" class="btn btn-soft">⬇ CSV</a>
+    <a href="{% url 'products:new' %}" class="btn btn-primary">+ New Product</a>
   </div>
 </div>
-<form class="mb-3"><input name="q" value="{{ q }}" placeholder="Search name or SKU…" class="inp max-w-xs"></form>
+<div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+  <div class="flex flex-wrap gap-1.5">
+    <a href="?" class="fbtn {% if not f %}on{% endif %}">All</a>
+    <a href="?f=mts" class="fbtn {% if f == 'mts' %}on{% endif %}">Make to Stock</a>
+    <a href="?f=mto" class="fbtn {% if f == 'mto' %}on{% endif %}">Make to Order</a>
+    <a href="?f=buy" class="fbtn {% if f == 'buy' %}on{% endif %}">Purchased</a>
+    <a href="?f=manufacture" class="fbtn {% if f == 'manufacture' %}on{% endif %}">Manufactured</a>
+    <a href="?f=low" class="fbtn {% if f == 'low' %}on{% endif %}">⚠ Low stock</a>
+  </div>
+  <form class="relative">
+    <svg class="h-4 w-4 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-4.3-4.3M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+    <input name="q" value="{{ q }}" placeholder="Search name or SKU…" class="inp pl-9 w-64">
+  </form>
+</div>
 <div class="card overflow-x-auto">
   <table class="erp">
     <thead><tr><th>Name</th><th>SKU</th><th>Type</th><th>Strategy</th><th>Source</th>
@@ -16,18 +32,18 @@
       <th class="text-right">Sale ₹</th></tr></thead>
     <tbody>
       {% for p in products %}
-      <tr>
-        <td><a href="{% url 'products:edit' p.pk %}" class="text-violet-600 hover:underline font-medium">{{ p.name }}</a></td>
+      <tr class="linkrow" onclick="location.href='{% url 'products:edit' p.pk %}'">
+        <td><span class="font-medium">{{ p.name }}</span></td>
         <td class="text-slate-500">{{ p.sku }}</td>
         <td>{{ p.get_product_type_display }}</td>
-        <td><span class="text-xs px-2 py-0.5 rounded {% if p.strategy == 'mto' %}bg-fuchsia-100 text-fuchsia-700{% else %}bg-sky-100 text-sky-700{% endif %}">{{ p.get_strategy_display }}</span></td>
+        <td><span class="chip {% if p.strategy == 'mto' %}bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300{% else %}bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300{% endif %}">{{ p.get_strategy_display }}</span></td>
         <td class="text-xs">{{ p.get_procurement_type_display }}</td>
         <td class="text-right">{{ p.on_hand }}</td>
-        <td class="text-right text-amber-600">{{ p.reserved }}</td>
-        <td class="text-right font-semibold {% if p.free_to_use <= 0 %}text-rose-500{% else %}text-emerald-600{% endif %}">{{ p.free_to_use }}</td>
-        <td class="text-right">{{ p.sale_price }}</td>
+        <td class="text-right text-slate-600">{{ p.reserved }}</td>
+        <td class="text-right font-semibold {% if p.free_to_use <= 0 %}text-rose-500{% else %}text-slate-600{% endif %}">{{ p.free_to_use }}</td>
+        <td class="text-right">{{ p.sale_price|floatformat:2 }}</td>
       </tr>
-      {% empty %}<tr><td colspan="9" class="text-center text-slate-500 py-8">No products yet.</td></tr>
+      {% empty %}<tr><td colspan="9" class="text-center text-slate-500 py-10">No products yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>

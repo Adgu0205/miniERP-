@@ -2,14 +2,19 @@
 {% load erp_extras %}
 {% block breadcrumb %}Sales Orders{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">Sales Orders</h1>
+<div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+  <div>
+    <h1 class="page-title">Sales Orders</h1>
+    <p class="page-sub">{{ orders|length }} order(s) · customer demand → reserve → deliver</p>
+  </div>
   <div class="flex items-center gap-2">
-    <a href="{% url 'sales:customers' %}" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">Customers</a>
-    <a href="?view=list" class="text-sm px-3 py-2 rounded-md {% if view != 'kanban' %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">List</a>
-    <a href="?view=kanban" class="text-sm px-3 py-2 rounded-md {% if view == 'kanban' %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">Kanban</a>
-    <a href="?status={{ sel_status }}&export=csv" class="text-sm px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800">⬇ CSV</a>
-    <a href="{% url 'sales:new' %}" class="rounded-md bg-violet-600 hover:bg-violet-700 text-white text-sm px-4 py-2">+ New</a>
+    <a href="{% url 'sales:customers' %}" class="btn btn-soft">Customers</a>
+    <div class="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5">
+      <a href="?view=list" class="btn {% if view != 'kanban' %}btn-primary{% else %}btn-soft{% endif %} py-1.5">List</a>
+      <a href="?view=kanban" class="btn {% if view == 'kanban' %}btn-primary{% else %}btn-soft{% endif %} py-1.5">Kanban</a>
+    </div>
+    <a href="?status={{ sel_status }}&export=csv" class="btn btn-soft">⬇ CSV</a>
+    <a href="{% url 'sales:new' %}" class="btn btn-primary">+ New Order</a>
   </div>
 </div>
 
@@ -22,7 +27,7 @@
     <div class="flex items-center justify-between text-xs font-semibold text-slate-500 px-2 py-1">
       <span class="flex items-center gap-1.5">
         <span class="h-2 w-2 rounded-full
-          {% if code == 'draft' %}bg-slate-400{% elif code == 'confirmed' %}bg-sky-500{% elif code == 'partial' %}bg-indigo-500{% elif code == 'delivered' %}bg-emerald-500{% else %}bg-rose-500{% endif %}"></span>
+          {% if code == 'draft' %}bg-slate-400{% elif code == 'confirmed' %}bg-slate-500{% elif code == 'partial' %}bg-slate-500{% elif code == 'delivered' %}bg-slate-500{% else %}bg-rose-500{% endif %}"></span>
         {{ label }}</span>
       <span class="opacity-60">{{ columns|get_item:code|length }}</span>
     </div>
@@ -30,11 +35,11 @@
       {% for so in columns|get_item:code %}
       <div class="card p-3 hover:shadow cursor-grab active:cursor-grabbing kcard" draggable="true" data-pk="{{ so.pk }}">
         <div class="flex justify-between items-center">
-          <a href="{% url 'sales:detail' so.pk %}" class="font-medium text-sm text-violet-600 hover:underline">{{ so.reference }}</a>
+          <a href="{% url 'sales:detail' so.pk %}" class="font-medium text-sm text-slate-600 hover:underline">{{ so.reference }}</a>
           {% if so.is_delayed %}<span class="text-xs text-rose-500">⚠</span>{% endif %}
         </div>
         <div class="text-xs text-slate-500 truncate">{{ so.customer.name|default:"—" }}</div>
-        <div class="text-xs mt-1 font-medium">₹{{ so.total }}</div>
+        <div class="text-xs mt-1 font-medium">₹{{ so.total|floatformat:2 }}</div>
       </div>
       {% endfor %}
     </div>
@@ -51,10 +56,10 @@
     c.addEventListener('dragend',()=>{c.style.opacity=1;});
   });
   board.querySelectorAll('.kcol').forEach(col=>{
-    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('ring-2','ring-violet-400');});
-    col.addEventListener('dragleave',()=>col.classList.remove('ring-2','ring-violet-400'));
+    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('ring-2','ring-slate-400');});
+    col.addEventListener('dragleave',()=>col.classList.remove('ring-2','ring-slate-400'));
     col.addEventListener('drop',e=>{
-      e.preventDefault();col.classList.remove('ring-2','ring-violet-400');
+      e.preventDefault();col.classList.remove('ring-2','ring-slate-400');
       if(!dragged)return;
       const pk=dragged.dataset.pk, action=map[col.dataset.status];
       if(action){ window.location=`${base}/${pk}/${action}/`; }
@@ -63,24 +68,30 @@
 })();
 </script>
 {% else %}
-<div class="mb-3 flex gap-1 text-xs">
-  <a href="?" class="px-2 py-1 rounded {% if not sel_status %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">All</a>
-  {% for code, label in statuses %}<a href="?status={{ code }}" class="px-2 py-1 rounded {% if sel_status == code %}bg-violet-600 text-white{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">{{ label }}</a>{% endfor %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+  <div class="flex flex-wrap gap-1.5">
+    <a href="?" class="fbtn {% if not sel_status %}on{% endif %}">All</a>
+    {% for code, label in statuses %}<a href="?status={{ code }}" class="fbtn {% if sel_status == code %}on{% endif %}">{{ label }}</a>{% endfor %}
+  </div>
+  <form class="relative">
+    <svg class="h-4 w-4 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-4.3-4.3M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+    <input name="q" value="{{ q }}" placeholder="Search reference or customer…" class="inp pl-9 w-64">
+  </form>
 </div>
 <div class="card overflow-x-auto">
   <table class="erp">
     <thead><tr><th>Reference</th><th>Customer</th><th>Date</th><th>Deadline</th><th class="text-right">Total ₹</th><th>Status</th></tr></thead>
     <tbody>
       {% for so in orders %}
-      <tr>
-        <td><a href="{% url 'sales:detail' so.pk %}" class="text-violet-600 hover:underline font-medium">{{ so.reference }}</a></td>
+      <tr class="linkrow" onclick="location.href='{% url 'sales:detail' so.pk %}'">
+        <td><span class="font-medium">{{ so.reference }}</span></td>
         <td>{{ so.customer.name|default:"—" }}</td>
         <td class="text-slate-500">{{ so.order_date }}</td>
         <td class="{% if so.is_delayed %}text-rose-500 font-medium{% endif %}">{{ so.deadline|default:"—" }}{% if so.is_delayed %} ⚠{% endif %}</td>
-        <td class="text-right">{{ so.total }}</td>
+        <td class="text-right">{{ so.total|floatformat:2 }}</td>
         <td>{% include "partials/badge.html" with status=so.status label=so.get_status_display %}</td>
       </tr>
-      {% empty %}<tr><td colspan="6" class="text-center text-slate-500 py-8">No sales orders.</td></tr>
+      {% empty %}<tr><td colspan="6" class="text-center text-slate-500 py-10">No sales orders yet. Click <b>+ New Order</b> to create one.</td></tr>
       {% endfor %}
     </tbody>
   </table>
