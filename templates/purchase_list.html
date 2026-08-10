@@ -5,58 +5,20 @@
 {% block heading %}Purchase Orders & RFQs{% endblock %}
 
 {% block content %}
-<style>
-  .list-row:hover {
-    background-color: var(--bg-secondary);
-  }
-  .btn-view-switch {
-    background-color: var(--bg-primary);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-md);
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .btn-view-switch:hover {
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-  }
-  .btn-view-switch.active {
-    background-color: var(--accent-hover) !important;
-    color: #ffffff !important;
-    border-color: var(--accent-hover) !important;
-  }
-  #po-search-input:focus {
-    border-color: var(--accent-hover);
-    outline: none;
-  }
-</style>
-
-<div class="panel-header" style="background-color: var(--bg-primary); border-radius: var(--border-radius-lg); border:1px solid var(--border-color); padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 16px;">
-  <h3 class="panel-title" style="margin:0;">Purchase Orders & RFQs</h3>
-  <div style="display:flex; align-items:center; gap:16px; flex-wrap: wrap;">
-    <!-- Search Bar -->
-    <div style="position:relative; min-width: 250px;">
-      <input type="text" id="po-search-input" class="form-control" placeholder="Search orders (Ref, vendor, responsible)..." style="padding-left:32px; height: 38px; font-size:13px;">
-      <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size: 13px;">🔍</span>
+<div class="page-toolbar">
+  <span class="page-toolbar-title">Purchase Orders &amp; RFQs</span>
+  <div class="page-toolbar-actions">
+    <div style="position:relative;">
+      <input type="text" id="po-search-input" class="form-control" placeholder="Search orders..." style="padding-left:28px; height:32px; font-size:12px; width:220px;">
+      <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:12px;">&#x1F50D;</span>
     </div>
-    
-    <!-- View Switcher -->
-    <div style="display:flex; align-items:center; gap:8px;">
-      <button type="button" class="btn-view-switch active" id="btn-view-kanban" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 8px 16px; font-size:13px; font-weight:600; cursor:pointer;">
-        📋 Kanban View
-      </button>
-      <button type="button" class="btn-view-switch" id="btn-view-list" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 8px 16px; font-size:13px; font-weight:600; cursor:pointer;">
-        ☰ List View
-      </button>
+    <div class="view-switcher">
+      <button type="button" class="btn-view-switch active" id="btn-view-kanban">Kanban</button>
+      <button type="button" class="btn-view-switch" id="btn-view-list">List</button>
     </div>
-    
-    <button class="btn btn-secondary btn-sm" id="btn-purchases-logs" style="height: 38px;">Logs</button>
+    <button class="btn btn-secondary btn-sm" id="btn-purchases-logs">Logs</button>
     {% if permissions.can_edit_purchases and not permissions.is_read_only %}
-      <button class="btn btn-primary btn-sm" id="btn-open-create-po-modal" style="height: 38px; display:flex; align-items:center; justify-content:center;">+ Create RFQ</button>
+      <button class="btn btn-primary btn-sm" id="btn-open-create-po-modal">+ New RFQ</button>
     {% endif %}
   </div>
 </div>
@@ -637,7 +599,7 @@
           }
           buttons.push(`<button class="btn btn-secondary" id="btn-drawer-edit-po" style="width:100%;">✏️ Edit Order</button>`);
           if (['draft', 'confirmed', 'partially_received'].includes(status)) {
-            buttons.push(`<button class="btn btn-secondary" id="btn-drawer-cancel-po" style="width:100%; color:var(--red); border-color:rgba(243,139,168,0.4);">Cancel Order</button>`);
+            buttons.push(`<button class="btn btn-secondary" id="btn-drawer-cancel-po" style="width:100%; color:#ef4444; border-color:#ef4444;">Cancel Order</button>`);
           }
           actionsContainer.innerHTML = buttons.join('');
         }

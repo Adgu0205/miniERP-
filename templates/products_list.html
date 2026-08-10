@@ -8,7 +8,7 @@
 <style>
   /* ── List view ── */
   .prod-row { cursor: pointer; transition: background 0.15s; }
-  .prod-row:hover { background: var(--bg-secondary) !important; }
+  .prod-row:hover { background: var(--bg-hover) !important; }
 
   /* ── Detail Panel Overlay ── */
   #prod-detail-overlay {
@@ -24,7 +24,7 @@
 
   #prod-detail-panel {
     background: var(--bg-primary, #fff);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     width: 680px;
     max-width: 96vw;
     max-height: 90vh;
@@ -55,7 +55,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     padding: 4px 10px;
-    border-radius: 20px;
+    border-radius: var(--radius-sm);
   }
   .detail-product-name {
     font-size: 18px;
@@ -89,8 +89,8 @@
   .detail-grid.three-col { grid-template-columns: 1fr 1fr 1fr; }
 
   .detail-field {
-    background: var(--bg-secondary, #f9fafb);
-    border-radius: 10px;
+    background: var(--bg-muted);
+    border-radius: var(--radius-md);
     padding: 12px 16px;
     display: flex;
     flex-direction: column;
@@ -117,7 +117,7 @@
   .detail-badge {
     display: inline-block;
     padding: 4px 12px;
-    border-radius: 20px;
+    border-radius: var(--radius-sm);
     font-size: 12px;
     font-weight: 600;
   }
@@ -133,20 +133,18 @@
 <!-- ═══════════════════════════════════════════════════════
      LIST VIEW
 ═══════════════════════════════════════════════════════ -->
-<div class="products-panel card-panel" id="list-view-section">
-  <div class="panel-header">
-    <h3 class="panel-title">Product Catalog &amp; Master Inventory</h3>
-    <div style="display:flex; gap:12px; align-items:center;">
-      <input type="text" id="search-products-input"
-             placeholder="Search by SKU or name..."
-             class="form-control"
-             style="width:240px; padding:6px 12px; font-size:13px;">
-      <button class="btn btn-secondary btn-sm" id="btn-products-logs">Logs</button>
-      {% if permissions.can_edit_products and not permissions.is_read_only %}
-        <button class="btn btn-primary btn-sm" id="btn-open-create-prod-modal">+ New Product</button>
-      {% endif %}
-    </div>
+<div class="page-toolbar">
+  <span class="page-toolbar-title">Product Catalog</span>
+  <div class="page-toolbar-actions">
+    <input type="text" id="search-products-input" placeholder="Search by SKU or name..." class="form-control" style="width:200px; height:32px; font-size:12px;">
+    <button class="btn btn-secondary btn-sm" id="btn-products-logs">Logs</button>
+    {% if permissions.can_edit_products and not permissions.is_read_only %}
+      <button class="btn btn-primary btn-sm" id="btn-open-create-prod-modal">+ New Product</button>
+    {% endif %}
   </div>
+</div>
+
+<div class="products-panel card-panel" id="list-view-section">
 
   <div class="table-responsive">
     <table class="erp-table" id="products-list-table">

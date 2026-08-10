@@ -4,43 +4,36 @@
 {% block heading %}Audit logs{% endblock %}
 
 {% block content %}
-<style>
-  /* Audit Logs — Dark Theme Overrides */
-  /* All structural classes already defined in style.css */
-  /* Only keeping filter-input font-family fix */
-  .filter-input {
-    font-family: var(--font-sans);
-  }
-</style>
 
-<!-- KPI Cards Grid -->
-<div class="audit-kpi-grid">
-  <!-- Total Logs Card -->
-  <div class="audit-kpi-card total-logs">
-    <span class="kpi-label">Total Logs</span>
-    <span class="kpi-number">{{ total_logs }}</span>
-    <span class="kpi-subtext">All time logs</span>
+<!-- Page Toolbar -->
+<div class="page-toolbar">
+  <span class="page-toolbar-title">Audit Logs</span>
+  <div class="page-toolbar-actions">
+    <a href="{% url 'export_audit_csv' %}?user={{ user_filter }}&module={{ module_filter }}&action_type={{ action_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-secondary btn-sm">⬇ Export</a>
   </div>
-  
-  <!-- Create Actions Card -->
-  <div class="audit-kpi-card create-actions">
-    <span class="kpi-label">Create Actions</span>
-    <span class="kpi-number">{{ create_actions }}</span>
-    <span class="kpi-subtext">Records Created</span>
+</div>
+
+<!-- KPI Stats -->
+<div class="dashboard-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 16px;">
+  <div class="stat-card stat-info">
+    <span class="stat-label">Total Logs</span>
+    <span class="stat-value">{{ total_logs }}</span>
+    <span class="stat-sub">All time</span>
   </div>
-  
-  <!-- Update Actions Card -->
-  <div class="audit-kpi-card update-actions">
-    <span class="kpi-label">Update Actions</span>
-    <span class="kpi-number">{{ update_actions }}</span>
-    <span class="kpi-subtext">Records Updated</span>
+  <div class="stat-card stat-success">
+    <span class="stat-label">Create Actions</span>
+    <span class="stat-value">{{ create_actions }}</span>
+    <span class="stat-sub">Records created</span>
   </div>
-  
-  <!-- Delete Actions Card -->
-  <div class="audit-kpi-card delete-actions">
-    <span class="kpi-label">Delete Actions</span>
-    <span class="kpi-number">{{ delete_actions }}</span>
-    <span class="kpi-subtext">Records Deleted</span>
+  <div class="stat-card stat-warning">
+    <span class="stat-label">Update Actions</span>
+    <span class="stat-value">{{ update_actions }}</span>
+    <span class="stat-sub">Records updated</span>
+  </div>
+  <div class="stat-card stat-danger">
+    <span class="stat-label">Delete Actions</span>
+    <span class="stat-value">{{ delete_actions }}</span>
+    <span class="stat-sub">Records deleted</span>
   </div>
 </div>
 
@@ -90,18 +83,9 @@
       </select>
     </div>
 
-    <!-- Submit & Reset -->
     <div style="display: flex; gap: 8px; align-items: center;">
-      <button type="submit" class="btn-filter">
-        <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.2 0-2.4 0-3.6.4M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-        </svg>
-        Filter
-      </button>
-      <a href="{% url 'audit_logs' %}" class="btn-reset">Reset</a>
-      <a href="{% url 'export_audit_csv' %}?user={{ user_filter }}&module={{ module_filter }}&action_type={{ action_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn-export" title="Export CSV">
-        ⬇ Export
-      </a>
+      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+      <a href="{% url 'audit_logs' %}" class="btn btn-secondary btn-sm">Reset</a>
     </div>
   </form>
 
@@ -138,7 +122,7 @@
 </div>
 
 <!-- Log List Panel -->
-<div class="audit-panel">
+<div class="card-panel">
   <div class="panel-header">
     <h3 class="panel-title">Audit Trails</h3>
     <span style="font-size:12px; color:var(--text-muted);">{{ total_count }} log entries matching filters</span>

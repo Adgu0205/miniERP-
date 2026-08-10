@@ -5,57 +5,20 @@
 {% block heading %}Sales Order Pipelines{% endblock %}
 
 {% block content %}
-<style>
-  .list-row:hover {
-    background-color: var(--bg-secondary);
-  }
-  .btn-view-switch {
-    background-color: var(--bg-primary);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-md);
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .btn-view-switch:hover {
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-  }
-  .btn-view-switch.active {
-    background-color: var(--accent-hover) !important;
-    color: #ffffff !important;
-    border-color: var(--accent-hover) !important;
-  }
-  #so-search-input:focus {
-    border-color: var(--accent-hover);
-    outline: none;
-  }
-</style>
-<div class="panel-header" style="background-color: var(--bg-primary); border-radius: var(--border-radius-lg); border:1px solid var(--border-color); padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 16px;">
-  <h3 class="panel-title" style="margin:0;">Sales Order Pipelines</h3>
-  <div style="display:flex; align-items:center; gap:16px; flex-wrap: wrap;">
-    <!-- Search Bar -->
-    <div style="position:relative; min-width: 250px;">
-      <input type="text" id="so-search-input" class="form-control" placeholder="Search orders (ID, customer, salesperson)..." style="padding-left:32px; height: 38px; font-size:13px;">
-      <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size: 13px;">🔍</span>
+<div class="page-toolbar">
+  <span class="page-toolbar-title">Sales Order Pipeline</span>
+  <div class="page-toolbar-actions">
+    <div style="position:relative;">
+      <input type="text" id="so-search-input" class="form-control" placeholder="Search orders..." style="padding-left:28px; height:32px; font-size:12px; width:220px;">
+      <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:12px;">&#x1F50D;</span>
     </div>
-    
-    <!-- View Switcher -->
-    <div style="display:flex; align-items:center; gap:8px;">
-      <button type="button" class="btn-view-switch active" id="btn-view-kanban" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 8px 16px; font-size:13px; font-weight:600; cursor:pointer;">
-        📋 Kanban View
-      </button>
-      <button type="button" class="btn-view-switch" id="btn-view-list" style="border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 8px 16px; font-size:13px; font-weight:600; cursor:pointer;">
-        ☰ List View
-      </button>
+    <div class="view-switcher">
+      <button type="button" class="btn-view-switch active" id="btn-view-kanban">Kanban</button>
+      <button type="button" class="btn-view-switch" id="btn-view-list">List</button>
     </div>
-    
-    <button class="btn btn-secondary btn-sm" id="btn-sales-logs" style="height: 38px;">Logs</button>
+    <button class="btn btn-secondary btn-sm" id="btn-sales-logs">Logs</button>
     {% if permissions.can_edit_sales and not permissions.is_read_only %}
-      <button class="btn btn-primary btn-sm" id="btn-open-create-so-modal" style="height: 38px; display:flex; align-items:center; justify-content:center;">+ Create Sales Order</button>
+      <button class="btn btn-primary btn-sm" id="btn-open-create-so-modal">+ New Order</button>
     {% endif %}
   </div>
 </div>
@@ -198,7 +161,7 @@
   <div class="kanban-column" data-status="cancelled">
     <div class="kanban-column-header">
       <span class="kanban-column-title">
-        <span class="badge badge-cancelled" style="border-radius:6px; font-size:11px; padding:3px 8px;">Cancelled</span>
+        <span class="badge badge-cancelled" style="border-radius:6px; font-size:11px; padding:3px 8px; background-color:#ef4444; color:#ffffff;">Cancelled</span>
       </span>
       <span class="kanban-card-count">{{ kanban_orders.cancelled.count }}</span>
     </div>
@@ -220,7 +183,7 @@
           </div>
           <div class="kanban-card-footer">
             <span class="kanban-card-price">₹{{ so.total_amount|floatformat:2 }}</span>
-            <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:var(--red);">CANCELLED</span>
+            <span style="font-size:10px; text-transform:uppercase; font-weight:700; color:#ef4444;">CANCELLED</span>
           </div>
         </div>
       {% endfor %}
@@ -739,7 +702,7 @@
           }
           buttons.push(`<button class="btn btn-secondary" id="btn-drawer-edit-so" style="width:100%;">✏️ Edit Order</button>`);
           if (['draft', 'confirmed', 'partially_delivered'].includes(status)) {
-            buttons.push(`<button class="btn btn-secondary" id="btn-drawer-cancel-so" style="width:100%; color:var(--red); border-color:rgba(243,139,168,0.4);">Cancel Order</button>`);
+            buttons.push(`<button class="btn btn-secondary" id="btn-drawer-cancel-so" style="width:100%; color:#ef4444; border-color:#ef4444;">Cancel Order</button>`);
           }
           actionsContainer.innerHTML = buttons.join('');
         }
